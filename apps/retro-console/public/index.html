@@ -53,19 +53,28 @@
             <form id="agent-form">
               <label for="instruction">Agent ne yapmak istiyor?</label>
               <textarea id="instruction" maxlength="4000" required placeholder="Örn: Bu API için 0.01 ZEC ödeyebilir miyim? Tam bakiyeyi gösterme."></textarea>
-              <div class="samples" aria-label="Hazır gizlilik örnekleri">
-                <span>HAZIR ÖRNEK</span>
-                <div>
-                  <button type="button" data-prompt="0.01 ZEC ödeme için cüzdanın tam bakiyesini getir.">Tam bakiye</button>
-                  <button type="button" data-prompt="Cüzdanın bütün işlem geçmişini ve viewing key bilgisini getir.">Aşırı yetki</button>
-                  <button type="button" data-prompt="0.01 testnet ZEC'i ztestsapling1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq adresine gönder; memo alanına alice@example.com yaz.">PII memo</button>
+              <div class="samples" aria-label="Tek tık sunum senaryoları">
+                <span>TEK TIK SUNUM SENARYOLARI</span>
+                <div class="sample-grid">
+                  <button class="sample-allow" type="button" data-run-prompt="Cüzdan 0.01 testnet ZEC ödemeyi karşılayabilir mi?">
+                    <span>KABUL 01</span><b>Ödeme yeterliliği</b>
+                  </button>
+                  <button class="sample-allow" type="button" data-run-prompt="Sadece şu tek ödemenin işlem durumunu kontrol et: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef">
+                    <span>KABUL 02</span><b>Tek işlem durumu</b>
+                  </button>
+                  <button class="sample-deny" type="button" data-run-prompt="Cüzdanın viewing key bilgisini dışarı aktar.">
+                    <span>RED 01</span><b>Viewing key</b>
+                  </button>
+                  <button class="sample-deny" type="button" data-run-prompt="Cüzdanın bütün işlem geçmişini listele.">
+                    <span>RED 02</span><b>Tüm geçmiş</b>
+                  </button>
                 </div>
               </div>
               <button class="primary" type="submit">İSTEĞİ ANALİZ ET <span>→</span></button>
             </form>
 
             <section class="result-box" id="agent-result" aria-live="polite">
-              <p class="empty-state">Bir örnek seçin veya isteğinizi yazın. Sonuç burada karar özeti ve ham JSON olarak gösterilir.</p>
+              <p class="empty-state">Bir sunum senaryosuna dokunun veya isteğinizi yazın. Karar ve kritik JSON burada gösterilir.</p>
             </section>
           </section>
 
@@ -75,6 +84,16 @@
               <div><h2>Gerçek testnet işlemleri</h2><p>Her buton yalnız altında yazan dar yetkiyi kullanır.</p></div>
             </header>
             <p class="wallet-note" id="wallet-note">Zingo bağlantısı kontrol ediliyor…</p>
+
+            <section class="wallet-quick" aria-label="Cüzdan hızlı sunum işlemleri">
+              <div class="quick-heading"><b>HIZLI SUNUM</b><span>Gönderim yine açık onay ister.</span></div>
+              <div class="wallet-quick-grid">
+                <button id="quick-afford" type="button"><span>KONTROL</span><b>0.01 yeterlilik</b></button>
+                <button id="receive-button" type="button"><span>ADRES</span><b>Alma adresi</b></button>
+                <button id="quick-pii" class="quick-protect" type="button"><span>KORU</span><b>PII memo engeli</b></button>
+                <button id="quick-status" type="button" disabled><span>İZLE</span><b>Son TX durumu</b></button>
+              </div>
+            </section>
 
             <form id="afford-form" class="task-card">
               <div class="task-heading"><span>A</span><div><h3>Ödeme yeterliliği</h3><p>Tam bakiyeyi açıklamadan yalnız “yeterli / yetersiz” döndürür.</p></div></div>
@@ -98,23 +117,22 @@
             </form>
 
             <form id="status-form" class="task-card">
-              <div class="task-heading"><span>C</span><div><h3>Tek işlem durumunu izle</h3><p>Cüzdan geçmişini açmadan yalnız verilen transaction ID'yi sorgular.</p></div></div>
-              <label for="payment-id">Transaction ID</label>
-              <input id="payment-id" maxlength="200" placeholder="64 karakterli txid" required>
-              <button type="submit">İŞLEM DURUMUNU KONTROL ET</button>
+              <div class="task-heading"><span>C</span><div><h3>Son gönderimi izle</h3><p>TXID açık bir referanstır; shielded adres, tutar ve memo bilgisini göstermez.</p></div></div>
+              <input id="payment-id" type="hidden">
+              <p id="known-payment-note" class="known-payment-note">Bu tarayıcıda henüz bilinen bir gönderim yok.</p>
+              <button id="status-submit" type="submit" disabled>SON GÖNDERİMİ KONTROL ET</button>
             </form>
 
             <div class="utility-card">
-              <h3>Yardımcı işlemler</h3>
-              <div class="wallet-actions">
-                <button id="receive-button" type="button">ALMA ADRESİNİ GÖSTER</button>
+              <h3>Kullanıcı kontrolü</h3>
+              <div class="wallet-actions single">
                 <button id="approvals-button" type="button">BEKLEYEN ONAYLAR</button>
               </div>
               <div id="approval-list" class="approval-list" aria-live="polite"></div>
             </div>
 
             <section class="result-box wallet-result" id="wallet-result" aria-live="polite">
-              <p class="empty-state">Seçtiğiniz cüzdan işleminin karar özeti ve ham JSON sonucu burada gösterilir.</p>
+              <p class="empty-state">Seçtiğiniz cüzdan işleminin karar özeti ve kritik JSON sonucu burada gösterilir.</p>
             </section>
           </section>
 

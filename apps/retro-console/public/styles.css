@@ -133,7 +133,7 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 
 .samples { margin: 9px 0 13px; }
 .samples > span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 8px; letter-spacing: .08em; }
-.samples > div { display: flex; gap: 6px; }
+.sample-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .samples button, .wallet-actions button, .task-card > button, .utility-card button, .approval-card button {
   border: 1px solid var(--line);
   border-radius: 2px;
@@ -142,6 +142,14 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
   background: #121914;
   font-size: 8px;
 }
+.samples button { min-height: 48px; padding: 8px 9px; text-align: left; }
+.samples button span, .samples button b { display: block; }
+.samples button span { margin-bottom: 4px; font-size: 7px; font-weight: 900; letter-spacing: .09em; }
+.samples button b { color: var(--ink); font: 700 9px/1.25 Arial, sans-serif; }
+.samples button.sample-allow { border-color: #397d50; background: var(--green-bg); }
+.samples button.sample-allow span { color: var(--green); }
+.samples button.sample-deny { border-color: #8a3b38; background: var(--red-bg); }
+.samples button.sample-deny span { color: var(--red); }
 .samples button:hover, .wallet-actions button:hover, .task-card > button:hover, .utility-card button:hover, .approval-card button:hover { border-color: var(--lime); color: var(--lime); }
 
 .primary { width: 100%; border: 0; padding: 12px; display: flex; justify-content: space-between; color: #101610; background: var(--lime); font-size: 10px; font-weight: 900; }
@@ -167,10 +175,22 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 .result-row .protected { color: var(--cyan); }
 .raw-json { margin-top: 9px; border-top: 1px solid var(--line); }
 .raw-json summary { padding: 9px 0 4px; color: var(--muted); cursor: pointer; font-size: 8px; letter-spacing: .08em; }
-.raw-json pre { max-height: 220px; margin: 5px 0 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #a9bba9; font: 9px/1.5 inherit; }
+.raw-json pre { max-height: 150px; margin: 5px 0 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #a9bba9; font: 9px/1.5 inherit; }
 
 .wallet-note { margin: 0 0 12px; padding: 9px 10px; border-left: 3px solid var(--amber); background: var(--amber-bg); color: #d4c99e; font: 10px/1.45 Arial, sans-serif; }
 .wallet-note.ok { border-color: var(--green); background: var(--green-bg); color: #b9d7c0; }
+.wallet-quick { margin: 0 0 10px; padding: 10px; border: 1px solid #48622e; background: #0c150e; }
+.quick-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 8px; }
+.quick-heading b { color: var(--lime); letter-spacing: .08em; }
+.quick-heading span { color: var(--muted); }
+.wallet-quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.wallet-quick button { min-height: 43px; padding: 7px 8px; border: 1px solid var(--line); color: var(--ink); background: #111914; text-align: left; }
+.wallet-quick button:hover { border-color: var(--lime); }
+.wallet-quick button span, .wallet-quick button b { display: block; }
+.wallet-quick button span { margin-bottom: 3px; color: var(--lime); font-size: 7px; font-weight: 900; letter-spacing: .08em; }
+.wallet-quick button b { font: 700 9px/1.2 Arial, sans-serif; }
+.wallet-quick button.quick-protect { border-color: #39776d; background: var(--cyan-bg); }
+.wallet-quick button.quick-protect span { color: var(--cyan); }
 .task-card, .utility-card { margin: 0 0 10px; padding: 11px; border: 1px solid var(--line); background: #0d130f; }
 .task-heading { display: grid; grid-template-columns: 23px 1fr; gap: 8px; margin-bottom: 9px; }
 .task-heading > span { width: 23px; height: 23px; display: grid; place-items: center; border: 1px solid var(--lime); color: var(--lime); font-size: 9px; font-weight: 900; }
@@ -179,12 +199,14 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 .task-card > input { margin-bottom: 3px; }
 .task-card > button { width: 100%; margin-top: 9px; color: var(--lime); border-color: #48622e; }
 .task-card .send-button { color: #18130a; border-color: var(--amber); background: var(--amber); font-weight: 900; }
+.known-payment-note { margin: 8px 0 3px; padding: 8px; border-left: 2px solid var(--cyan); color: #a9c8c1; background: var(--cyan-bg); font: 9px/1.45 Arial, sans-serif; overflow-wrap: anywhere; }
 .input-row { display: grid; grid-template-columns: 1fr 45px; }
 .input-row span { display: grid; place-items: center; border: 1px solid var(--line); border-left: 0; color: var(--lime); background: #121914; font-size: 9px; }
 .check { display: flex; align-items: flex-start; gap: 7px; color: #aeb9af; text-transform: none; letter-spacing: 0; line-height: 1.4; }
 .check input { width: auto; margin-top: 1px; accent-color: var(--lime); }
 .utility-card h3 { margin-bottom: 8px; }
 .wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.wallet-actions.single { grid-template-columns: 1fr; }
 .approval-list { display: grid; gap: 7px; margin-top: 8px; }
 .approval-card { padding: 9px; border: 1px solid #6b592c; background: var(--amber-bg); }
 .approval-card p { margin: 0 0 7px; color: #d2c58e; font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }

@@ -47,12 +47,59 @@ function decisionBanner(result, fallbackTitle = "SONUÇ") {
   return banner;
 }
 
-function rawJson(value) {
+function criticalJson(value) {
   const details = element("details", "raw-json");
   details.open = true;
-  details.append(element("summary", "", "HAM JSON SONUCUNU GÖSTER / GİZLE"));
+  details.append(element("summary", "", "KRİTİK JSON · GÖSTER / GİZLE"));
   details.append(element("pre", "", JSON.stringify(value, null, 2)));
   return details;
+}
+
+function agentJson(result) {
+  return {
+    decision: result.policy.decision,
+    risk: result.policy.risk,
+    reasonCode: result.policy.reasonCode,
+    capability: result.agent.capability,
+    aiSource: result.agent.source,
+    executionPerformed: result.execution.performed,
+  };
+}
+
+function rememberPaymentId(paymentId) {
+  try { window.localStorage.setItem("shadeguard:last-payment-id", paymentId); } catch {}
+}
+
+function updateQuickStatus() {
+  const paymentId = $("#payment-id").value.trim();
+  const disabled = !state.walletConnected || !paymentId;
+  $("#quick-status").disabled = disabled;
+  $("#status-submit").disabled = disabled;
+  $("#known-payment-note").textContent = paymentId
+    ? `Bilinen açık referans: ${paymentId.slice(0, 10)}…${paymentId.slice(-8)} · shielded alanlar görünmez.`
+    : "Bu tarayıcıda henüz bilinen bir gönderim yok.";
+}
+
+function walletJson(result) {
+  return {
+    decision: result.decision,
+    risk: result.risk,
+    reasonCode: result.reasonCode,
+    ...(typeof result.affordable === "boolean" ? { affordable: result.affordable } : {}),
+    ...(result.receiveAddress ? { receiveAddress: result.receiveAddress } : {}),
+    ...(result.payment ? { transaction: { status: result.payment.status, txid: result.payment.paymentId } } : {}),
+    ...(result.paymentStatus ? {
+      paymentStatus: {
+        status: result.paymentStatus.status,
+        ...(result.paymentStatus.confirmations === undefined ? {} : { confirmations: result.paymentStatus.confirmations }),
+      },
+    } : {}),
+    ...(result.safeAlternative ? { safeAlternative: result.safeAlternative } : {}),
+    ...(result.approval ? { approval: { id: result.approval.id, status: result.approval.status } } : {}),
+    ...(Array.isArray(result.approvals) ? {
+      approvals: result.approvals.map(({ id, capability, status }) => ({ id, capability, status })),
+    } : {}),
+  };
 }
 
 function renderAgent(result) {
@@ -68,7 +115,7 @@ function renderAgent(result) {
   if (result.agent.providerNotice) grid.append(resultRow("AI DURUMU", result.agent.providerNotice));
   for (const item of result.protections) grid.append(resultRow("KORUMA", item, "protected"));
   grid.append(resultRow("ÇALIŞTIRMA", "Yapılmadı — analiz cüzdana dokunmaz", "protected"));
-  target.append(grid, rawJson(result));
+  target.append(grid, criticalJson(agentJson(result)));
 }
 
 function renderWallet(result, actionLabel) {
@@ -86,6 +133,8 @@ function renderWallet(result, actionLabel) {
     grid.append(resultRow("TX DURUMU", result.payment.status));
     grid.append(resultRow("TXID", result.payment.paymentId));
     $("#payment-id").value = result.payment.paymentId;
+    rememberPaymentId(result.payment.paymentId);
+    updateQuickStatus();
   }
   if (result.paymentStatus) {
     grid.append(resultRow("ZİNCİR DURUMU", result.paymentStatus.status));
@@ -93,13 +142,36 @@ function renderWallet(result, actionLabel) {
   }
   if (result.safeAlternative) grid.append(resultRow("ALTERNATİF", `${result.safeAlternative.capability} · memo kaldırıldı: ${result.safeAlternative.memoRemoved ? "evet" : "hayır"}`));
   if (result.approval) grid.append(resultRow("ONAY", `${result.approval.status} · ${result.approval.id}`));
-  target.append(grid, rawJson(result));
+  target.append(grid, criticalJson(walletJson(result)));
+}
+
+function renderPiiProtection(result) {
+  const target = $("#wallet-result");
+  const safeAlternative = result.policy.safeAlternative
+    ? { capability: result.policy.safeAlternative.capability, memoRemoved: result.policy.safeAlternative.memoRemoved }
+    : undefined;
+  const summary = {
+    decision: result.policy.decision,
+    risk: result.policy.risk,
+    reasonCode: result.policy.reasonCode,
+    ...(safeAlternative ? { safeAlternative } : {}),
+  };
+  target.replaceChildren(decisionBanner(result.policy));
+  const grid = element("div", "result-grid");
+  grid.append(
+    resultRow("İŞLEM", "PII memo güvenlik kontrolü"),
+    resultRow("RİSK", result.policy.risk),
+    resultRow("NEDEN", result.policy.reasonCode),
+    resultRow("KORUMA", "E-posta LLM'e ve zincire gönderilmedi", "protected"),
+    resultRow("ÇALIŞTIRMA", "Yapılmadı — yalnız güvenli alternatif üretildi", "protected"),
+  );
+  target.append(grid, criticalJson(summary));
 }
 
 function renderFailure(target, message) {
   target.replaceChildren();
   const result = { decision: "DENY", explanation: message, error: message };
-  target.append(decisionBanner(result), rawJson(result));
+  target.append(decisionBanner(result), criticalJson({ decision: result.decision, error: result.error }));
 }
 
 async function loadStatus() {
@@ -121,6 +193,7 @@ async function loadStatus() {
   }
   for (const button of document.querySelectorAll("#panel-wallet button")) button.disabled = !status.wallet.connected;
   $("#approvals-button").disabled = false;
+  updateQuickStatus();
 }
 
 function approvalDescription(approval) {
@@ -190,8 +263,11 @@ document.querySelectorAll(".tab").forEach((tab) => {
   });
 });
 
-document.querySelectorAll("[data-prompt]").forEach((button) => {
-  button.addEventListener("click", () => { $("#instruction").value = button.dataset.prompt; });
+document.querySelectorAll("[data-run-prompt]").forEach((button) => {
+  button.addEventListener("click", () => {
+    $("#instruction").value = button.dataset.runPrompt;
+    $("#agent-form").requestSubmit();
+  });
 });
 
 $("#agent-form").addEventListener("submit", async (event) => {
@@ -219,6 +295,32 @@ $("#afford-form").addEventListener("submit", async (event) => {
     }), "Minimum bilgi sorgusu");
     await loadAudit();
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
+});
+
+$("#quick-afford").addEventListener("click", () => {
+  $("#afford-amount").value = "0.01";
+  $("#afford-form").requestSubmit();
+});
+
+$("#quick-pii").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const recipient = $("#recipient").value.trim()
+      || "ztestsapling1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+    const result = await request("/api/agent/analyze", {
+      method: "POST",
+      body: JSON.stringify({
+        instruction: `0.01 testnet ZEC'i ${recipient} adresine gönder; memo alanına alice@example.com yaz.`,
+      }),
+    });
+    renderPiiProtection(result);
+    await loadAudit();
+  } catch (error) {
+    renderFailure($("#wallet-result"), error.message);
+  } finally {
+    button.disabled = !state.walletConnected;
+  }
 });
 
 $("#send-form").addEventListener("submit", async (event) => {
@@ -254,6 +356,8 @@ $("#status-form").addEventListener("submit", async (event) => {
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
 });
 
+$("#quick-status").addEventListener("click", () => $("#status-form").requestSubmit());
+
 $("#receive-button").addEventListener("click", async () => {
   try {
     renderWallet(await request("/api/wallet/receive", {
@@ -272,6 +376,10 @@ $("#approvals-button").addEventListener("click", async () => {
 });
 
 $("#audit-refresh").addEventListener("click", () => void loadAudit());
+
+try {
+  $("#payment-id").value = window.localStorage.getItem("shadeguard:last-payment-id") || "";
+} catch {}
 
 void Promise.all([loadStatus(), loadAudit(), loadApprovals(false)]).catch(() => {
   $("#wallet-note").textContent = "ShadeGuard backend bağlantısı kurulamadı.";
