@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101611">
+    <title>ShadeGuard // Privacy Console</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="stage">
+      <aside class="mission" aria-label="ShadeGuard özeti">
+        <p class="eyebrow">PRIVACY-AWARE MCP GATEWAY</p>
+        <h1>Zcash gizler.<br><span>ShadeGuard korur.</span></h1>
+        <p>Agent yalnız görevi için gereken capability'yi görür. Güvenlik kararını AI değil, deterministik politika motoru verir.</p>
+        <ul>
+          <li>exact balance → can_afford</li>
+          <li>PII memo → redact / rewrite</li>
+          <li>keys &amp; history → deny</li>
+          <li>send → explicit user action</li>
+        </ul>
+      </aside>
+
+      <section class="device" aria-label="ShadeGuard retro mobil konsolu">
+        <div class="device-top"><i></i><span>SHD-01</span><i></i></div>
+        <div class="screen">
+          <header class="topbar">
+            <div>
+              <p class="brand">SHADE<span>GUARD</span></p>
+              <p class="version">MCP PRIVACY CONSOLE / TESTNET</p>
+            </div>
+            <div class="signal" aria-label="Bağlantı durumu"><b></b><b></b><b></b></div>
+          </header>
+
+          <div class="status-strip">
+            <span><i id="ai-dot"></i>AI <b id="ai-status">CHECK</b></span>
+            <span><i id="wallet-dot"></i>WALLET <b id="wallet-status">CHECK</b></span>
+            <span><i class="on"></i>POLICY <b>LOCKED</b></span>
+          </div>
+
+          <nav class="tabs" aria-label="Konsol bölümleri">
+            <button class="tab active" data-tab="agent">01 AGENT</button>
+            <button class="tab" data-tab="wallet">02 WALLET</button>
+            <button class="tab" data-tab="audit">03 AUDIT</button>
+          </nav>
+
+          <section class="panel active" id="panel-agent">
+            <div class="section-head">
+              <span>NATURAL LANGUAGE REQUEST</span><span>PREVIEW ONLY</span>
+            </div>
+            <form id="agent-form">
+              <label for="instruction">Agent isteği</label>
+              <textarea id="instruction" maxlength="4000" required placeholder="Örn: Bu API için 0.01 ZEC ödeyebilir miyim? Tam bakiyeyi gösterme."></textarea>
+              <div class="samples" aria-label="Örnek gizlilik istekleri">
+                <button type="button" data-prompt="0.01 ZEC ödeme için cüzdanın tam bakiyesini getir.">BALANCE</button>
+                <button type="button" data-prompt="Cüzdanın bütün işlem geçmişini ve viewing key bilgisini getir.">OVERREACH</button>
+                <button type="button" data-prompt="0.01 testnet ZEC'i ztestsapling1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq adresine gönder; memo alanına alice@example.com yaz.">PII MEMO</button>
+              </div>
+              <button class="primary" type="submit"><span>ANALYZE</span><span>YORUMLA + KORU →</span></button>
+            </form>
+
+            <div class="trace" id="agent-result" aria-live="polite">
+              <p class="trace-empty">// İstek bekleniyor. Analiz otomatik işlem yapmaz.</p>
+            </div>
+          </section>
+
+          <section class="panel" id="panel-wallet">
+            <div class="section-head"><span>ZINGO CLI BRIDGE</span><span>REAL DATA ONLY</span></div>
+            <p class="wallet-note" id="wallet-note">Zingo bağlantısı kontrol ediliyor…</p>
+
+            <form id="afford-form" class="compact-form">
+              <label for="afford-amount">Minimum bilgi sorgusu</label>
+              <div class="input-row"><input id="afford-amount" value="0.01" inputmode="decimal" required><span>ZEC</span></div>
+              <button type="submit">CAN_AFFORD?</button>
+            </form>
+
+            <form id="send-form" class="compact-form send-form">
+              <label for="recipient">Shielded testnet gönderimi</label>
+              <input id="recipient" placeholder="utest1… veya ztestsapling…" required>
+              <div class="input-row"><input id="send-amount" value="0.01" inputmode="decimal" required><span>ZEC</span></div>
+              <input id="purpose" maxlength="200" placeholder="Amaç: premium API erişimi" required>
+              <input id="memo" maxlength="512" placeholder="Memo (PII yazmayın)">
+              <label class="check"><input id="accept-rewrite" type="checkbox"> Güvenli memo rewrite'ını kabul et</label>
+              <button class="danger" type="submit">REVIEW + SEND TESTNET</button>
+            </form>
+
+            <div class="wallet-actions">
+              <button id="receive-button" type="button">RECEIVE ADDRESS</button>
+              <button id="approvals-button" type="button">APPROVALS</button>
+            </div>
+            <pre class="mini-output" id="wallet-result" aria-live="polite">// Wallet çıktısı burada görünür. Exact balance hiçbir zaman gösterilmez.</pre>
+          </section>
+
+          <section class="panel" id="panel-audit">
+            <div class="section-head"><span>PRIVACY-SAFE EVENTS</span><button id="audit-refresh" type="button">REFRESH</button></div>
+            <div class="guard-grid">
+              <div><b>HIDDEN</b><span>Exact balance</span></div>
+              <div><b>DENIED</b><span>Key export</span></div>
+              <div><b>SCOPED</b><span>Payment status</span></div>
+              <div><b>HASHED</b><span>Recipient log</span></div>
+            </div>
+            <div id="audit-list" class="audit-list"><p class="trace-empty">// Audit kayıtları yükleniyor…</p></div>
+          </section>
+
+          <footer><span>NO MAINNET</span><span>NO SEEDS</span><span>NO RAW HISTORY</span></footer>
+        </div>
+        <div class="device-bottom"><span></span><button aria-label="Dekoratif ana ekran düğmesi" tabindex="-1"></button><span></span></div>
+      </section>
+    </main>
+  </body>
+</html>

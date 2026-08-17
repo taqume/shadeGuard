@@ -1,0 +1,12 @@
+# Security overlay for the pinned upstream Z3 testnet stack.
+# Wallet and validator RPC endpoints remain host-local; Zebra P2P stays public.
+services:
+  zebra:
+    ports: !override
+      - "127.0.0.1:${Z3_ZEBRA_HOST_RPC_PORT:-18232}:${Z3_ZEBRA_RPC_PORT:-18232}"
+      - "${Z3_ZEBRA_HOST_P2P_PORT:-18233}:${Z3_ZEBRA_P2P_PORT:-18233}"
+      - "127.0.0.1:${Z3_ZEBRA_HOST_HEALTH_PORT:-18080}:8080"
+
+  zallet:
+    ports: !override
+      - "127.0.0.1:${Z3_ZALLET_HOST_RPC_PORT:-40232}:28232"

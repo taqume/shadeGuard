@@ -1,0 +1,22 @@
+{
+  "name": "@shadeguard/retro-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "tsc -b tsconfig.json --clean",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --passWithNoTests --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@shadeguard/ai-adapter": "workspace:*",
+    "@shadeguard/core": "workspace:*",
+    "@shadeguard/mcp-gateway": "workspace:*",
+    "@shadeguard/zcash-adapter": "workspace:*",
+    "zod": "^4.1.5"
+  }
+}

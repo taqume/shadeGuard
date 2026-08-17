@@ -1,0 +1,40 @@
+{
+  "name": "shadeguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Privacy-aware MCP security gateway for AI agents interacting with Zcash",
+  "type": "module",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "clean": "pnpm -r clean",
+    "demo": "pnpm build && pnpm --filter @shadeguard/demo-agent dev",
+    "web": "pnpm build && node --env-file-if-exists=.env apps/retro-console/dist/server.js",
+    "web:dev": "node --env-file-if-exists=.env --import tsx apps/retro-console/src/server.ts",
+    "gemini:test": "env RUN_GEMINI_LIVE=1 node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run packages/ai-adapter/src/gemini.live.test.ts",
+    "nvidia:test": "env RUN_NVIDIA_LIVE=1 node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run packages/ai-adapter/src/nvidia.live.test.ts",
+    "dev": "pnpm build && pnpm --filter @shadeguard/mcp-gateway dev",
+    "approval:list": "pnpm build && node packages/mcp-gateway/dist/approval-cli.js list",
+    "approval:approve": "pnpm build && node packages/mcp-gateway/dist/approval-cli.js approve",
+    "test": "pnpm build && pnpm -r test",
+    "test:coverage": "pnpm -r test:coverage",
+    "testnet:setup": "bash scripts/testnet.sh setup",
+    "testnet:up": "bash scripts/testnet.sh up",
+    "testnet:status": "bash scripts/testnet.sh status",
+    "testnet:wallet": "bash scripts/testnet.sh wallet",
+    "testnet:receive": "bash scripts/testnet.sh receive",
+    "testnet:mcp": "pnpm build && bash scripts/testnet.sh mcp",
+    "testnet:test": "pnpm build && bash scripts/testnet.sh test",
+    "zingo:check": "node --env-file-if-exists=.env scripts/run-with-env.mjs bash scripts/zingo.sh check",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

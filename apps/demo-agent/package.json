@@ -1,0 +1,19 @@
+{
+  "name": "@shadeguard/demo-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "tsc -b tsconfig.json --clean",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --passWithNoTests --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@shadeguard/mcp-gateway": "workspace:*"
+  }
+}
