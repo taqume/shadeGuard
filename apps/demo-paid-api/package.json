@@ -1,0 +1,21 @@
+{
+  "name": "@shadeguard/demo-paid-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "tsc -b tsconfig.json --clean",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "client": "tsx src/client.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@shadeguard/core": "workspace:*",
+    "@shadeguard/zcash-adapter": "workspace:*"
+  }
+}

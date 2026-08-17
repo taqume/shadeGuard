@@ -4,7 +4,12 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { ZingoCliProvider, extractJsonValues, type ZingoCommandRunner } from "./zingo.js";
+import {
+  ZingoCliProvider,
+  extractJsonValues,
+  parseZingoTransactionText,
+  type ZingoCommandRunner,
+} from "./zingo.js";
 
 const recipient = `utest1${"q".repeat(120)}`;
 const txId = "a".repeat(64);
@@ -59,6 +64,37 @@ describe("ZingoCliProvider", () => {
       zingo.sendShielded({ requestId: "request", amountZatoshi: 1_000_000, recipient }),
     ).resolves.toEqual({ paymentId: txId, status: "SUBMITTED" });
     expect(runner.calls[1]?.args.slice(-3)).toEqual(["quicksend", recipient, "1000000"]);
+  });
+
+  it("reduces current Zingo transaction text to one task-scoped payment status", async () => {
+    const otherTxId = "b".repeat(64);
+    const output = `sync\n{
+    txid: ${otherTxId}
+    status: confirmed
+    spend status: confirmed spent in ${txId}
+}\n{
+    txid: ${txId}
+    status: confirmed
+    blockheight: 4280311
+    value: 1000000
+    recipient: ${recipient}
+}\nsaved`;
+
+    expect(parseZingoTransactionText(output, txId)).toEqual({ paymentId: txId, status: "CONFIRMED", txId });
+    const runner = new ScriptedRunner(["Zingo CLI 5.0.0", output]);
+    const zingo = await provider(runner);
+    await expect(zingo.getPaymentStatus(txId)).resolves.toEqual({ paymentId: txId, status: "CONFIRMED", txId });
+    expect(runner.calls[1]?.args).toContain("transactions");
+  });
+
+  it("does not treat a mempool record with a candidate block height as confirmed", () => {
+    const output = `{
+      txid: ${txId}
+      status: mempool
+      blockheight: 4280337
+      kind: sent
+    }`;
+    expect(parseZingoTransactionText(output, txId)).toEqual({ paymentId: txId, status: "PENDING", txId });
   });
 
   it("refuses transparent recipients before invoking Zingo", async () => {

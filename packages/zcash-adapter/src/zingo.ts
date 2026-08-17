@@ -168,24 +168,27 @@ export class ZingoCliProvider implements ZcashProvider {
   public async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
     if (!TX_ID.test(paymentId)) throw new Error("Payment ID must be a Zcash transaction ID");
     return this.enqueue(async () => {
-      const values = await this.runJson("transactions");
+      const stdout = await this.runCommand("transactions");
+      const values = extractJsonValues(stdout);
       const record = this.findTransactionRecord(values, paymentId.toLowerCase());
-      if (!record) return { paymentId, status: "UNKNOWN" };
-      const statusText = this.stringProperty(record, ["status", "state"])?.toUpperCase();
-      const confirmations = this.numberProperty(record, ["confirmations", "confirmation_count"]);
-      const blockHeight = this.numberProperty(record, ["blockheight", "block_height", "height"]);
-      if (statusText?.includes("FAIL") || statusText?.includes("REJECT")) {
-        return { paymentId, status: "FAILED", txId: paymentId };
+      if (record) {
+        const statusText = this.stringProperty(record, ["status", "state"])?.toUpperCase();
+        const confirmations = this.numberProperty(record, ["confirmations", "confirmation_count"]);
+        const blockHeight = this.numberProperty(record, ["blockheight", "block_height", "height"]);
+        if (statusText?.includes("FAIL") || statusText?.includes("REJECT")) {
+          return { paymentId, status: "FAILED", txId: paymentId };
+        }
+        if (statusText?.includes("CONFIRM") || (statusText === undefined && ((confirmations ?? 0) > 0 || (blockHeight ?? 0) > 0))) {
+          return {
+            paymentId,
+            status: "CONFIRMED",
+            txId: paymentId,
+            ...(confirmations === undefined ? {} : { confirmations }),
+          };
+        }
+        return { paymentId, status: "PENDING", txId: paymentId };
       }
-      if ((confirmations ?? 0) > 0 || (blockHeight ?? 0) > 0 || statusText?.includes("CONFIRM")) {
-        return {
-          paymentId,
-          status: "CONFIRMED",
-          txId: paymentId,
-          ...(confirmations === undefined ? {} : { confirmations }),
-        };
-      }
-      return { paymentId, status: "PENDING", txId: paymentId };
+      return parseZingoTransactionText(stdout, paymentId) ?? { paymentId, status: "UNKNOWN" };
     });
   }
 
@@ -202,6 +205,13 @@ export class ZingoCliProvider implements ZcashProvider {
   }
 
   private async runJson(command: string, extraArgs: readonly string[] = []): Promise<unknown[]> {
+    const stdout = await this.runCommand(command, extraArgs);
+    const values = extractJsonValues(stdout);
+    if (values.length === 0) throw new Error("Zingo CLI returned no structured response");
+    return values;
+  }
+
+  private async runCommand(command: string, extraArgs: readonly string[] = []): Promise<string> {
     const args = [
       "--chain",
       "testnet",
@@ -214,9 +224,7 @@ export class ZingoCliProvider implements ZcashProvider {
       ...extraArgs,
     ];
     const { stdout } = await this.runner.run(this.options.binaryPath, args, this.commandTimeoutMs);
-    const values = extractJsonValues(stdout);
-    if (values.length === 0) throw new Error("Zingo CLI returned no structured response");
-    return values;
+    return stdout;
   }
 
   private findParsed<T>(values: readonly unknown[], schema: z.ZodType<T>, label: string): T {
@@ -296,6 +304,25 @@ export class ZingoCliProvider implements ZcashProvider {
     );
     return execution;
   }
+}
+
+/** Parses only task-scoped status fields from current Zingo's human-readable transaction output. */
+export function parseZingoTransactionText(output: string, paymentId: string): PaymentStatus | undefined {
+  if (!TX_ID.test(paymentId)) return undefined;
+  const records = output.split(/(?=^\{\s*$)/mu);
+  const escaped = paymentId.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const record = records.find((entry) => new RegExp(`^\\s*txid:\\s*${escaped}\\s*$`, "imu").test(entry));
+  if (!record) return undefined;
+  const status = /^\s*status:\s*([^\r\n]+)$/imu.exec(record)?.[1]?.trim().toUpperCase();
+  const blockHeightText = /^\s*blockheight:\s*(\d+)\s*$/imu.exec(record)?.[1];
+  const blockHeight = blockHeightText === undefined ? undefined : Number(blockHeightText);
+  if (status?.includes("FAIL") || status?.includes("REJECT")) {
+    return { paymentId, status: "FAILED", txId: paymentId };
+  }
+  if (status?.includes("CONFIRM") || (status === undefined && (blockHeight ?? 0) > 0)) {
+    return { paymentId, status: "CONFIRMED", txId: paymentId };
+  }
+  return { paymentId, status: "PENDING", txId: paymentId };
 }
 
 /** Extracts JSON objects/arrays from Zingo's mixed informational stdout. */

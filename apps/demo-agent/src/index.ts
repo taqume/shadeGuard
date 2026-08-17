@@ -22,13 +22,24 @@ async function main(): Promise<void> {
   const client = new Client({ name: "shadeguard-demo-agent", version: "0.1.0" });
   const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
   const serverPath = fileURLToPath(new URL("../../../packages/mcp-gateway/dist/server.js", import.meta.url));
+  const live = process.env.SHADEGUARD_DEMO_MODE === "live";
+  const livePaymentId = process.env.SHADEGUARD_DEMO_PAYMENT_ID?.trim();
+  if (live && !livePaymentId && process.env.RUN_ZCASH_TESTNET_SEND !== "1") {
+    throw new Error("Live demo requires explicit RUN_ZCASH_TESTNET_SEND=1 opt-in");
+  }
+  const inheritedEnv = Object.fromEntries(
+    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: [serverPath],
     env: {
-      SHADEGUARD_MODE: "mock",
+      ...inheritedEnv,
+      SHADEGUARD_MODE: live ? "zingo" : "mock",
       SHADEGUARD_NETWORK: "testnet",
-      SHADEGUARD_AUDIT_PATH: `${projectRoot}.shadeguard/demo-audit.jsonl`,
+      SHADEGUARD_AUDIT_PATH: `${projectRoot}.shadeguard/${live ? "live-acceptance" : "demo"}-audit.jsonl`,
+      SHADEGUARD_SPEND_LEDGER_PATH: `${projectRoot}.shadeguard/${live ? "live-acceptance" : "demo"}-spend-ledger.jsonl`,
+      SHADEGUARD_APPROVAL_SOCKET: `${projectRoot}.shadeguard/${live ? "live-acceptance" : "demo"}-approval.sock`,
     },
     stderr: "inherit",
   });
@@ -50,7 +61,49 @@ async function main(): Promise<void> {
     );
     console.log("Minimum-information response:", affordability);
 
-    const recipient = `utest1${"q".repeat(90)}`;
+    if (livePaymentId) {
+      const status = structured(
+        await client.callTool({
+          name: "shadeguard_get_payment_status",
+          arguments: { paymentId: livePaymentId },
+        }),
+      );
+      console.log("Live task-scoped payment status:", status);
+      return;
+    }
+
+    const recipient = live
+      ? process.env.SHADEGUARD_DEMO_RECIPIENT?.trim()
+      : `utest1${"q".repeat(90)}`;
+    if (!recipient) throw new Error("SHADEGUARD_DEMO_RECIPIENT is required for the live testnet demo");
+
+    if (live) {
+      const sent = structured(
+        await client.callTool({
+          name: "shadeguard_safe_send",
+          arguments: {
+            amountZec: process.env.SHADEGUARD_DEMO_AMOUNT_ZEC?.trim() || "0.01",
+            recipient,
+            purpose: "ShadeGuard MCP live acceptance transfer",
+          },
+        }),
+      );
+      console.log("Live shielded payment:", sent);
+      const payment = sent.payment;
+      if (!payment || typeof payment !== "object" || !("paymentId" in payment)) {
+        throw new Error("Live testnet payment was not submitted");
+      }
+      const paymentId = String(payment.paymentId);
+      const status = structured(
+        await client.callTool({
+          name: "shadeguard_get_payment_status",
+          arguments: { paymentId },
+        }),
+      );
+      console.log("Live task-scoped payment status:", status);
+      return;
+    }
+
     const rewrite = structured(
       await client.callTool({
         name: "shadeguard_safe_send",

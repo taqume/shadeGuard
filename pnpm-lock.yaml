@@ -30,6 +30,18 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mcp-gateway
 
+  apps/demo-paid-api:
+    dependencies:
+      '@modelcontextprotocol/client':
+        specifier: 2.0.0
+        version: 2.0.0
+      '@shadeguard/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@shadeguard/zcash-adapter':
+        specifier: workspace:*
+        version: link:../../packages/zcash-adapter
+
   apps/retro-console:
     dependencies:
       '@shadeguard/ai-adapter':

@@ -124,9 +124,9 @@ Operational logs go to stderr because stdout is reserved for MCP stdio transport
 4. Viewing-key/history least-authority denials.
 5. Zingo CLI light-wallet adapter plus optional pinned Zallet/Zaino/Zebra profile.
 6. Gemini/NVIDIA NIM intent-explanation adapter and retro privacy console.
-7. Paid HTTP 402 demo backed by a real testnet payment.
+7. Paid HTTP 402 demo backed by a real testnet payment. The loopback demo service issues a shielded payment requirement, verifies only the supplied incoming txid in its separate merchant wallet, and releases the protected response after confirmation.
 
-The blockchain acceptance slice is not complete until a locally generated Zingo development wallet receives testnet ZEC, broadcasts a shielded transaction, and ShadeGuard reports status through MCP. This live acceptance remains explicitly gated because it requires an external binary, indexer availability and funded testnet wallet.
+The blockchain acceptance slice was completed on 2026-08-17: a locally generated Zingo development wallet received testnet ZEC, ShadeGuard broadcast a shielded transfer through its MCP safe tool, and the task-scoped status returned `CONFIRMED` through MCP. The repeatable live command remains explicitly gated because it spends testnet funds and depends on an external indexer. Evidence and txids are recorded in [live-acceptance.md](live-acceptance.md).
 
 ## Upstream facts used by this design
 

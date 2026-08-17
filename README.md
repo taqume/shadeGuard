@@ -77,6 +77,34 @@ pnpm test
 pnpm demo
 ```
 
+Gerçek MCP acceptance demosu yalnız açık testnet-send opt-in'iyle çalışır. Fonlanmış kaynak wallet'ın `.env` içinde seçili olduğundan ve alıcı adresinin ayrı bir testnet wallet'a ait olduğundan emin ol:
+
+```bash
+SHADEGUARD_DEMO_RECIPIENT='utest1…' pnpm demo:testnet
+```
+
+Bu komut gerçek bir shielded testnet transferi yayınlar; normal `pnpm demo` ise mock provider kullanmaya devam eder.
+Bilinen tek bir ödemeyi salt-okunur olarak MCP üzerinden sorgulamak için
+`SHADEGUARD_DEMO_PAYMENT_ID='<txid>' pnpm demo:testnet:status` kullanılabilir.
+
+## HTTP 402 paid API demosu
+
+Bu demo genel amaçlı bir ödeme protokolü değildir; ShadeGuard'ın otomatik bir paid API ödemesini nasıl dar yetkiyle yönettiğini gösterir. Ayrı merchant testnet wallet adresini ve dizinini `.env` içinde `PAID_API_RECIPIENT` / `PAID_API_ZINGO_DATA_DIR` olarak ayarla. İlk terminalde:
+
+```bash
+pnpm paid-api
+```
+
+`GET /premium` önce shielded testnet ödeme koşuluyla HTTP `402` döndürür. İkinci terminaldeki agent challenge'ı okur, exact balance yerine `can_afford` çağırır, ödemeyi `shadeguard_safe_send` ile yapar, tek txid durumunu izler ve endpoint'i tekrar çağırır:
+
+```bash
+RUN_ZCASH_TESTNET_SEND=1 pnpm paid-api:client
+```
+
+Merchant servis yalnız kendi Zingo wallet'ında görünen, confirmed ve istenen minimum tutarı karşılayan incoming txid'yi kabul eder. Agent merchant'ın wallet geçmişini görmez.
+Yayınlanmış bir ödeme sonrası süreç kesilirse yeni ödeme yapmadan
+`PAID_API_PAYMENT_ID='<txid>' pnpm paid-api:client` ile doğrulama kaldığı yerden sürdürülebilir.
+
 When a policy requires approval, keep the MCP server running and use a second terminal:
 
 ```bash
@@ -89,6 +117,7 @@ The agent can then call the scoped resume tool with the original request ID. The
 Testler harici API veya Zcash kurulumu olmadan çalışır. Test doubles yalnız unit/integration test kapsamındadır; web runtime'ı bağlantı yokken gerçek olmayan wallet sonucu üretmez.
 
 Architecture and security assumptions are documented in [docs/architecture.md](docs/architecture.md), [docs/threat-model.md](docs/threat-model.md), and [docs/testnet.md](docs/testnet.md).
+The most recent real-chain evidence is recorded in [docs/live-acceptance.md](docs/live-acceptance.md).
 
 ## Legacy tam-node testnet yolu
 
