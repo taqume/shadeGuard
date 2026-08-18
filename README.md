@@ -58,7 +58,7 @@ Raw downstream tools are never mirrored upstream. Exact balance, full history, n
 
 ## What the demo proves
 
-The retro mobile interface is an explainability console, not a replacement wallet. It makes normally invisible intent, policy, approval, wallet, and audit boundaries understandable in a short video.
+The retro mobile interface is an explainability console, not a replacement wallet. It makes normally invisible intent, policy, approval, wallet, and audit boundaries understandable in a short video. It defaults to English for global visitors and includes a persistent `TR / EN` language switch.
 
 1. Ask whether `0.01 TAZ` is affordable and receive only `true` or `false`.
 2. Request a viewing key and observe a deterministic critical denial.

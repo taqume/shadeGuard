@@ -1,21 +1,57 @@
+import { createI18n } from "./i18n.js";
+
 const $ = (selector) => document.querySelector(selector);
+const i18n = createI18n();
+const t = (key, values) => i18n.t(key, values);
 
-const state = { walletConnected: false, aiConfigured: false, aiProvider: "deterministic" };
-
-const decisionLabels = {
-  ALLOW: { label: "KABUL", tone: "allow", description: "İstek politika sınırları içinde." },
-  DENY: { label: "RED", tone: "deny", description: "İstek güvenli şekilde durduruldu." },
-  REWRITE: { label: "GÜVENLİ ALTERNATİF", tone: "rewrite", description: "İstek daha az bilgi veya yetki kullanacak şekilde değiştirildi." },
-  REQUIRE_APPROVAL: { label: "KULLANICI ONAYI", tone: "approval", description: "Açık kullanıcı onayı olmadan işlem yapılmayacak." },
+const state = {
+  walletConnected: false,
+  aiConfigured: false,
+  aiProvider: "deterministic",
+  language: i18n.language,
 };
+
+const decisionTones = {
+  ALLOW: "allow",
+  DENY: "deny",
+  REWRITE: "rewrite",
+  REQUIRE_APPROVAL: "approval",
+};
+
+function decisionMeta(decision, fallbackTitle = t("result.default")) {
+  const tone = decisionTones[decision] ?? "neutral";
+  return {
+    tone,
+    label: i18n.lookup(`decision.${decision}.label`) ?? fallbackTitle,
+    description: i18n.lookup(`decision.${decision}.description`) ?? t("result.description"),
+  };
+}
+
+function policyExplanation(result, fallback) {
+  return i18n.lookup(`reason.${result.reasonCode}`) ?? result.explanation ?? fallback;
+}
+
+function localizedProtections(reasonCode) {
+  const specific = i18n.lookup(`protection.${reasonCode}`);
+  return [t("protection.llm"), t("protection.secrets"), specific ?? t("protection.default")];
+}
+
+function errorText(code) {
+  const key = `error.${code}`;
+  return i18n.lookup(key) ?? code;
+}
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
     ...options,
-    headers: options.body ? { "content-type": "application/json" } : undefined,
+    headers: {
+      "accept-language": state.language,
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.headers ?? {}),
+    },
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "REQUEST_FAILED");
+  if (!response.ok) throw new Error(errorText(result.error || "REQUEST_FAILED"));
   return result;
 }
 
@@ -32,17 +68,13 @@ function resultRow(label, value, className = "") {
   return row;
 }
 
-function decisionBanner(result, fallbackTitle = "SONUÇ") {
-  const meta = decisionLabels[result.decision] || {
-    label: fallbackTitle,
-    tone: "neutral",
-    description: "İşlem sonucu aşağıda gösteriliyor.",
-  };
+function decisionBanner(result, fallbackTitle = t("result.default")) {
+  const meta = decisionMeta(result.decision, fallbackTitle);
   const banner = element("div", `decision-banner ${meta.tone}`);
   banner.append(
-    element("small", "", "DETERMİNİSTİK POLİTİKA KARARI"),
+    element("small", "", t("result.policy")),
     element("strong", "", meta.label),
-    element("span", "", result.explanation || meta.description),
+    element("span", "", policyExplanation(result, meta.description)),
   );
   return banner;
 }
@@ -52,11 +84,9 @@ function walletBanner(result, fallbackTitle) {
   const affordable = result.affordable;
   const banner = element("div", `decision-banner ${affordable ? "allow" : "deny"}`);
   banner.append(
-    element("small", "", "ÖDEME YETERLİLİK SONUCU"),
-    element("strong", "", affordable ? "YETERLİ BAKİYE" : "YETERSİZ BAKİYE"),
-    element("span", "", affordable
-      ? "Cüzdan istenen tutarı karşılayabiliyor; tam bakiye açıklanmadı."
-      : "Cüzdan istenen tutarı karşılayamıyor; tam bakiye açıklanmadı."),
+    element("small", "", t("result.affordability")),
+    element("strong", "", t(affordable ? "result.sufficient" : "result.insufficient")),
+    element("span", "", t(affordable ? "result.sufficientBody" : "result.insufficientBody")),
   );
   return banner;
 }
@@ -64,7 +94,7 @@ function walletBanner(result, fallbackTitle) {
 function criticalJson(value) {
   const details = element("details", "raw-json");
   details.open = true;
-  details.append(element("summary", "", "KRİTİK JSON · GÖSTER / GİZLE"));
+  details.append(element("summary", "", t("result.json")));
   details.append(element("pre", "", JSON.stringify(value, null, 2)));
   return details;
 }
@@ -90,8 +120,8 @@ function updateQuickStatus() {
   $("#quick-status").disabled = disabled;
   $("#status-submit").disabled = disabled;
   $("#known-payment-note").textContent = paymentId
-    ? `Bilinen açık referans: ${paymentId.slice(0, 10)}…${paymentId.slice(-8)} · shielded alanlar görünmez.`
-    : "Bu tarayıcıda henüz bilinen bir gönderim yok.";
+    ? t("track.known", { id: `${paymentId.slice(0, 10)}…${paymentId.slice(-8)}` })
+    : t("track.empty");
 }
 
 function walletJson(result) {
@@ -127,41 +157,45 @@ function renderAgent(result) {
   target.replaceChildren(decisionBanner(result.policy));
   const grid = element("div", "result-grid");
   grid.append(
-    resultRow("AI YORUMU", `${result.agent.source.toUpperCase()} · ${result.agent.capability}`),
-    resultRow("RİSK", result.policy.risk),
-    resultRow("NEDEN", result.policy.reasonCode),
-    resultRow("AÇIKLAMA", result.agent.explanation),
+    resultRow(t("row.ai"), `${result.agent.source.toUpperCase()} · ${result.agent.capability}`),
+    resultRow(t("row.risk"), result.policy.risk),
+    resultRow(t("row.reason"), result.policy.reasonCode),
+    resultRow(t("row.explanation"), result.agent.explanation),
   );
-  if (result.agent.providerNotice) grid.append(resultRow("AI DURUMU", result.agent.providerNotice));
-  for (const item of result.protections) grid.append(resultRow("KORUMA", item, "protected"));
-  grid.append(resultRow("ÇALIŞTIRMA", "Yapılmadı — analiz cüzdana dokunmaz", "protected"));
+  if (result.agent.providerNotice) grid.append(resultRow(t("row.aiStatus"), t("provider.fallback")));
+  for (const item of localizedProtections(result.policy.reasonCode)) grid.append(resultRow(t("row.protection"), item, "protected"));
+  grid.append(resultRow(t("row.execution"), t("execution.preview"), "protected"));
   target.append(grid, criticalJson(agentJson(result)));
 }
 
-function renderWallet(result, actionLabel) {
+function renderWallet(result, actionKey) {
+  const actionLabel = t(actionKey);
   const target = $("#wallet-result");
   target.replaceChildren(walletBanner(result, actionLabel));
   const grid = element("div", "result-grid");
-  grid.append(resultRow("İŞLEM", actionLabel));
-  if (result.risk) grid.append(resultRow("RİSK", result.risk));
-  if (result.reasonCode) grid.append(resultRow("NEDEN", result.reasonCode));
+  grid.append(resultRow(t("row.operation"), actionLabel));
+  if (result.risk) grid.append(resultRow(t("row.risk"), result.risk));
+  if (result.reasonCode) grid.append(resultRow(t("row.reason"), result.reasonCode));
   if (typeof result.affordable === "boolean") {
-    grid.append(resultRow("YETERLİ Mİ", result.affordable ? "EVET" : "HAYIR", result.affordable ? "protected" : "rejected"));
+    grid.append(resultRow(t("row.affordable"), t(result.affordable ? "value.yes" : "value.no"), result.affordable ? "protected" : "rejected"));
   }
-  if (result.receiveAddress) grid.append(resultRow("ALMA ADRESİ", result.receiveAddress));
+  if (result.receiveAddress) grid.append(resultRow(t("row.receive"), result.receiveAddress));
   if (result.payment?.paymentId) {
-    grid.append(resultRow("TX DURUMU", result.payment.status));
+    grid.append(resultRow(t("row.txStatus"), result.payment.status));
     grid.append(resultRow("TXID", result.payment.paymentId));
     $("#payment-id").value = result.payment.paymentId;
     rememberPaymentId(result.payment.paymentId);
     updateQuickStatus();
   }
   if (result.paymentStatus) {
-    grid.append(resultRow("ZİNCİR DURUMU", result.paymentStatus.status));
-    if (result.paymentStatus.confirmations !== undefined) grid.append(resultRow("ONAY", result.paymentStatus.confirmations));
+    grid.append(resultRow(t("row.chainStatus"), result.paymentStatus.status));
+    if (result.paymentStatus.confirmations !== undefined) grid.append(resultRow(t("row.confirmations"), result.paymentStatus.confirmations));
   }
-  if (result.safeAlternative) grid.append(resultRow("ALTERNATİF", `${result.safeAlternative.capability} · memo kaldırıldı: ${result.safeAlternative.memoRemoved ? "evet" : "hayır"}`));
-  if (result.approval) grid.append(resultRow("ONAY", `${result.approval.status} · ${result.approval.id}`));
+  if (result.safeAlternative) {
+    const removed = t(result.safeAlternative.memoRemoved ? "value.yes" : "value.no").toLowerCase();
+    grid.append(resultRow(t("row.alternative"), `${result.safeAlternative.capability} · ${t("value.memoRemoved", { value: removed })}`));
+  }
+  if (result.approval) grid.append(resultRow(t("row.approval"), `${result.approval.status} · ${result.approval.id}`));
   target.append(grid, criticalJson(walletJson(result)));
 }
 
@@ -179,11 +213,11 @@ function renderPiiProtection(result) {
   target.replaceChildren(decisionBanner(result.policy));
   const grid = element("div", "result-grid");
   grid.append(
-    resultRow("İŞLEM", "PII memo güvenlik kontrolü"),
-    resultRow("RİSK", result.policy.risk),
-    resultRow("NEDEN", result.policy.reasonCode),
-    resultRow("KORUMA", "E-posta LLM'e ve zincire gönderilmedi", "protected"),
-    resultRow("ÇALIŞTIRMA", "Yapılmadı — yalnız güvenli alternatif üretildi", "protected"),
+    resultRow(t("row.operation"), t("pii.operation")),
+    resultRow(t("row.risk"), result.policy.risk),
+    resultRow(t("row.reason"), result.policy.reasonCode),
+    resultRow(t("row.protection"), t("pii.protection"), "protected"),
+    resultRow(t("row.execution"), t("execution.pii"), "protected"),
   );
   target.append(grid, criticalJson(summary));
 }
@@ -199,17 +233,17 @@ async function loadStatus() {
   state.walletConnected = status.wallet.connected;
   state.aiConfigured = status.ai.configured;
   state.aiProvider = status.ai.provider;
-  $("#wallet-status").textContent = status.wallet.connected ? "BAĞLI" : "KAPALI";
+  $("#wallet-status").textContent = t(status.wallet.connected ? "status.connected" : "status.offline");
   $("#wallet-dot").className = status.wallet.connected ? "on" : "warn";
-  $("#ai-status").textContent = status.ai.configured ? status.ai.provider.toUpperCase() : "YEREL";
+  $("#ai-status").textContent = status.ai.configured ? status.ai.provider.toUpperCase() : t("status.local");
   $("#ai-dot").className = status.ai.configured ? "on" : "warn";
   const note = $("#wallet-note");
   if (status.wallet.connected) {
     note.className = "wallet-note ok";
-    note.textContent = `${status.wallet.provider} ${status.wallet.version} bağlı · gerçek testnet verisi · sahte bakiye yok`;
+    note.textContent = t("wallet.connectedNote", { provider: status.wallet.provider, version: status.wallet.version });
   } else {
     note.className = "wallet-note";
-    note.textContent = status.wallet.message || "Cüzdan bağlı değil. Hiçbir sahte bakiye veya işlem gösterilmiyor.";
+    note.textContent = t("wallet.offlineNote");
   }
   for (const button of document.querySelectorAll("#panel-wallet button")) button.disabled = !status.wallet.connected;
   $("#approvals-button").disabled = false;
@@ -227,20 +261,20 @@ async function loadApprovals(renderEmpty = false) {
   target.replaceChildren();
   const pending = result.approvals.filter((approval) => approval.status === "PENDING");
   if (!pending.length) {
-    if (renderEmpty) target.append(element("p", "empty-state", "Bekleyen kullanıcı onayı yok."));
+    if (renderEmpty) target.append(element("p", "empty-state", t("approval.empty")));
     return result;
   }
   for (const approval of pending) {
     const card = element("div", "approval-card");
     card.append(element("p", "", approvalDescription(approval)));
-    const button = element("button", "", "BU EXACT İSTEĞİ ONAYLA VE DEVAM ET");
+    const button = element("button", "", t("approval.button"));
     button.type = "button";
     button.addEventListener("click", async () => {
-      if (!window.confirm("Bu exact testnet isteğini tek kullanımlık onayla çalıştırmak istiyor musun?")) return;
+      if (!window.confirm(t("approval.confirm"))) return;
       button.disabled = true;
       try {
         const resumed = await request(`/api/approvals/${approval.id}/approve`, { method: "POST", body: "{}" });
-        renderWallet(resumed, "Onaylanan testnet işlemi");
+        renderWallet(resumed, "action.approved");
         await Promise.all([loadApprovals(true), loadAudit()]);
       } catch (error) {
         renderFailure($("#wallet-result"), error.message);
@@ -259,20 +293,27 @@ async function loadAudit() {
   const target = $("#audit-list");
   target.replaceChildren();
   if (!events.length) {
-    target.append(element("p", "empty-state", "Henüz privacy-safe kayıt yok."));
+    target.append(element("p", "empty-state", t("audit.empty")));
     return;
   }
   for (const event of events) {
     const row = element("div", "audit-event");
-    const time = element("time", "", new Date(event.timestamp).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    const locale = state.language === "tr" ? "tr-TR" : "en-US";
+    const time = element("time", "", new Date(event.timestamp).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     const capability = element("b", "", event.capability);
-    const tone = decisionLabels[event.decision]?.tone || "neutral";
-    const label = decisionLabels[event.decision]?.label || event.decision;
-    const decision = element("span", `audit-decision ${tone}`, label);
+    const meta = decisionMeta(event.decision, event.decision);
+    const decision = element("span", `audit-decision ${meta.tone}`, meta.label);
     row.append(time, capability, decision);
     target.append(row);
   }
 }
+
+i18n.applyDocument();
+
+$("#language-toggle").addEventListener("click", () => {
+  i18n.switchLanguage();
+  window.location.reload();
+});
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -294,12 +335,12 @@ $("#agent-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector("button[type=submit]");
   button.disabled = true;
-  $("#agent-result").replaceChildren(element("p", "empty-state", state.aiConfigured ? "NVIDIA NIM isteği yorumluyor…" : "Deterministik yerel analiz çalışıyor…"));
+  $("#agent-result").replaceChildren(element("p", "empty-state", t(state.aiConfigured ? "loading.nvidia" : "loading.local")));
   try {
     renderAgent(await request("/api/agent/analyze", { method: "POST", body: JSON.stringify({ instruction: $("#instruction").value }) }));
     await loadAudit();
   } catch (error) {
-    renderFailure($("#agent-result"), `Analiz başarısız: ${error.message}`);
+    renderFailure($("#agent-result"), t("error.analysis", { message: error.message }));
   } finally {
     button.disabled = false;
   }
@@ -311,7 +352,7 @@ $("#afford-form").addEventListener("submit", async (event) => {
     renderWallet(await request("/api/wallet/can-afford", {
       method: "POST",
       body: JSON.stringify({ amountZec: $("#afford-amount").value, purpose: "Retro console minimum-information check" }),
-    }), "Minimum bilgi sorgusu");
+    }), "action.afford");
     await loadAudit();
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
 });
@@ -329,9 +370,7 @@ $("#quick-pii").addEventListener("click", async (event) => {
       || "ztestsapling1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
     const result = await request("/api/agent/analyze", {
       method: "POST",
-      body: JSON.stringify({
-        instruction: `0.01 testnet ZEC'i ${recipient} adresine gönder; memo alanına alice@example.com yaz.`,
-      }),
+      body: JSON.stringify({ instruction: t("prompt.pii", { recipient }) }),
     });
     renderPiiProtection(result);
     await loadAudit();
@@ -344,7 +383,7 @@ $("#quick-pii").addEventListener("click", async (event) => {
 
 $("#send-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!window.confirm("Bu exact isteği ShadeGuard politikasına göndermek istiyor musun? Politika ALLOW verirse gerçek TESTNET transferi yayınlanır.")) return;
+  if (!window.confirm(t("confirm.send"))) return;
   const button = event.currentTarget.querySelector("button[type=submit]");
   button.disabled = true;
   try {
@@ -358,7 +397,7 @@ $("#send-form").addEventListener("submit", async (event) => {
         acceptSafeRewrite: $("#accept-rewrite").checked,
       }),
     });
-    renderWallet(result, "Shielded testnet gönderimi");
+    renderWallet(result, "action.send");
     await Promise.all([loadApprovals(false), loadAudit()]);
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
   finally { button.disabled = false; }
@@ -370,7 +409,7 @@ $("#status-form").addEventListener("submit", async (event) => {
     renderWallet(await request("/api/wallet/status", {
       method: "POST",
       body: JSON.stringify({ paymentId: $("#payment-id").value }),
-    }), "Tek işlem durumu");
+    }), "action.status");
     await loadAudit();
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
 });
@@ -382,7 +421,7 @@ $("#receive-button").addEventListener("click", async () => {
     renderWallet(await request("/api/wallet/receive", {
       method: "POST",
       body: JSON.stringify({ purpose: "Testnet demo wallet funding" }),
-    }), "Testnet alma adresi");
+    }), "action.receive");
     await loadAudit();
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
 });
@@ -390,7 +429,7 @@ $("#receive-button").addEventListener("click", async () => {
 $("#approvals-button").addEventListener("click", async () => {
   try {
     const result = await loadApprovals(true);
-    renderWallet(result, "Kullanıcı onayları");
+    renderWallet(result, "action.approvals");
   } catch (error) { renderFailure($("#wallet-result"), error.message); }
 });
 
@@ -401,5 +440,5 @@ try {
 } catch {}
 
 void Promise.all([loadStatus(), loadAudit(), loadApprovals(false)]).catch(() => {
-  $("#wallet-note").textContent = "ShadeGuard backend bağlantısı kurulamadı.";
+  $("#wallet-note").textContent = t("wallet.backendUnavailable");
 });

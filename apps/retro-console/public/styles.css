@@ -44,7 +44,7 @@ button { cursor: pointer; }
 .mission { align-self: center; max-width: 440px; }
 .eyebrow { color: var(--lime); letter-spacing: .16em; font-size: 11px; }
 .mission h1 { margin: 20px 0; font: 700 clamp(38px, 5vw, 62px)/1 Arial, sans-serif; letter-spacing: -.055em; }
-.mission h1 span { color: var(--lime); }
+.mission h1 .accent { color: var(--lime); }
 .mission > p:not(.eyebrow) { color: #aeb9af; font: 16px/1.65 Arial, sans-serif; max-width: 420px; }
 .mission-flow { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 9px; counter-reset: flow; }
 .mission-flow li { position: relative; padding: 12px 14px 12px 44px; border: 1px solid #253128; background: rgba(14, 20, 15, .82); counter-increment: flow; }
@@ -92,12 +92,15 @@ button { cursor: pointer; }
 .brand { margin: 0; font-weight: 900; font-size: 20px; letter-spacing: -.075em; }
 .brand span { color: var(--lime); }
 .version { margin: 4px 0 0; color: var(--muted); font-size: 8px; letter-spacing: .1em; }
+.top-actions { display: flex; align-items: center; gap: 12px; }
+.language-toggle { min-width: 32px; height: 25px; border: 1px solid #48622e; border-radius: 2px; color: var(--lime); background: #111914; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.language-toggle:hover { border-color: var(--lime); background: #172019; }
 .signal { display: flex; align-items: end; gap: 3px; height: 18px; }
 .signal b { display: block; width: 4px; background: var(--lime); }
 .signal b:nth-child(1) { height: 5px; }.signal b:nth-child(2) { height: 10px; }.signal b:nth-child(3) { height: 15px; }
 
 .status-strip { display: flex; justify-content: space-between; gap: 5px; padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 8px; }
-.status-strip span { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.status-strip > span { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .status-strip i { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #596159; }
 .status-strip i.on, #ai-dot.on, #wallet-dot.on { background: var(--green); box-shadow: 0 0 7px var(--green); }
 .status-strip i.warn { background: var(--amber); box-shadow: 0 0 7px var(--amber); }
@@ -215,7 +218,8 @@ textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
 .wallet-result { margin-bottom: 8px; }
 
 .guard-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
-.guard-strip span { padding: 8px; border: 1px solid var(--line); color: var(--muted); background: #0c120d; font-size: 8px; line-height: 1.4; }
+.guard-strip > span { padding: 8px; border: 1px solid var(--line); color: var(--muted); background: #0c120d; font-size: 8px; line-height: 1.4; }
+.guard-strip > span > span { display: block; }
 .guard-strip b { display: block; margin-bottom: 2px; color: var(--lime); font-size: 9px; }
 .audit-toolbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 7px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 8px; letter-spacing: .08em; }
 .audit-toolbar button { border: 0; color: var(--lime); background: transparent; font-size: 8px; }

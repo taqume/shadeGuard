@@ -1,27 +1,27 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0d120e">
     <title>ShadeGuard // Privacy Console</title>
     <link rel="stylesheet" href="/styles.css">
-    <script src="/app.js" defer></script>
+    <script type="module" src="/app.js"></script>
   </head>
   <body>
     <main class="stage">
-      <aside class="mission" aria-label="ShadeGuard özeti">
+      <aside class="mission" aria-label="ShadeGuard summary" data-i18n-aria="mission.aria">
         <p class="eyebrow">ZCASH · MCP · PRIVACY GATEWAY</p>
-        <h1>Zcash gizler.<br><span>ShadeGuard korur.</span></h1>
-        <p>Agent ile cüzdan arasındaki güvenlik katmanı. AI isteği yorumlar; kararı her zaman deterministik politika verir.</p>
+        <h1><span data-i18n="mission.line1">Zcash shields.</span><br><span class="accent" data-i18n="mission.line2">ShadeGuard guards.</span></h1>
+        <p data-i18n="mission.body">The security layer between an agent and a wallet. AI interprets the request; deterministic policy always makes the decision.</p>
         <ol class="mission-flow">
-          <li><b>İsteği anla</b><span>Doğal dili güvenli capability'ye çevir.</span></li>
-          <li><b>Politikayı uygula</b><span>Minimum bilgi ve minimum yetkiyi zorunlu tut.</span></li>
-          <li><b>Güvenle çalıştır</b><span>Yalnız izinli shielded testnet işlemini gönder.</span></li>
+          <li><b data-i18n="flow.understand.title">Understand the request</b><span data-i18n="flow.understand.body">Turn natural language into a narrow capability.</span></li>
+          <li><b data-i18n="flow.enforce.title">Enforce policy</b><span data-i18n="flow.enforce.body">Require least information and least authority.</span></li>
+          <li><b data-i18n="flow.execute.title">Execute safely</b><span data-i18n="flow.execute.body">Send only an approved shielded testnet operation.</span></li>
         </ol>
       </aside>
 
-      <section class="device" aria-label="ShadeGuard mobil test konsolu">
+      <section class="device" aria-label="ShadeGuard mobile test console" data-i18n-aria="device.aria">
         <div class="device-top"><i></i><span>SHD-01 · TESTNET</span><i></i></div>
         <div class="screen">
           <header class="topbar">
@@ -29,130 +29,133 @@
               <p class="brand">SHADE<span>GUARD</span></p>
               <p class="version">PRIVACY CONTROL / TESTNET</p>
             </div>
-            <div class="signal" aria-label="Bağlantı durumu"><b></b><b></b><b></b></div>
+            <div class="top-actions">
+              <button id="language-toggle" class="language-toggle" type="button" aria-label="Türkçeye geç">TR</button>
+              <div class="signal" aria-label="Connection status" data-i18n-aria="connection.aria"><b></b><b></b><b></b></div>
+            </div>
           </header>
 
-          <div class="status-strip" aria-label="Sistem durumu">
-            <span><i id="ai-dot"></i>AI <b id="ai-status">KONTROL</b></span>
-            <span><i id="wallet-dot"></i>CÜZDAN <b id="wallet-status">KONTROL</b></span>
-            <span><i class="on"></i>POLİTİKA <b>AKTİF</b></span>
+          <div class="status-strip" aria-label="System status" data-i18n-aria="status.aria">
+            <span><i id="ai-dot"></i>AI <b id="ai-status" data-i18n="status.check">CHECK</b></span>
+            <span><i id="wallet-dot"></i><span data-i18n="status.wallet">WALLET</span> <b id="wallet-status" data-i18n="status.check">CHECK</b></span>
+            <span><i class="on"></i><span data-i18n="status.policy">POLICY</span> <b data-i18n="status.active">ACTIVE</b></span>
           </div>
 
-          <nav class="tabs" aria-label="Konsol bölümleri">
-            <button class="tab active" data-tab="agent"><b>1</b><span>İSTEK</span></button>
-            <button class="tab" data-tab="wallet"><b>2</b><span>CÜZDAN</span></button>
-            <button class="tab" data-tab="audit"><b>3</b><span>KAYITLAR</span></button>
+          <nav class="tabs" aria-label="Console sections" data-i18n-aria="tabs.aria">
+            <button class="tab active" data-tab="agent"><b>1</b><span data-i18n="tab.request">REQUEST</span></button>
+            <button class="tab" data-tab="wallet"><b>2</b><span data-i18n="tab.wallet">WALLET</span></button>
+            <button class="tab" data-tab="audit"><b>3</b><span data-i18n="tab.audit">AUDIT</span></button>
           </nav>
 
           <section class="panel active" id="panel-agent">
             <header class="panel-title">
               <span class="step-number">1</span>
-              <div><h2>Agent isteğini denetle</h2><p>Bu adım sadece analiz eder; cüzdan işlemi yapmaz.</p></div>
+              <div><h2 data-i18n="agent.title">Inspect the agent request</h2><p data-i18n="agent.subtitle">This step analyzes only; it never performs a wallet operation.</p></div>
             </header>
 
             <form id="agent-form">
-              <label for="instruction">Agent ne yapmak istiyor?</label>
-              <textarea id="instruction" maxlength="4000" required placeholder="Örn: Bu API için 0.01 ZEC ödeyebilir miyim? Tam bakiyeyi gösterme."></textarea>
-              <div class="samples" aria-label="Tek tık sunum senaryoları">
-                <span>TEK TIK SUNUM SENARYOLARI</span>
+              <label for="instruction" data-i18n="agent.label">What does the agent want to do?</label>
+              <textarea id="instruction" maxlength="4000" required placeholder="Example: Can I pay 0.01 ZEC for this API? Do not reveal the exact balance." data-i18n-placeholder="agent.placeholder"></textarea>
+              <div class="samples" aria-label="One-click demo scenarios" data-i18n-aria="samples.aria">
+                <span data-i18n="samples.title">ONE-CLICK DEMO SCENARIOS</span>
                 <div class="sample-grid">
-                  <button class="sample-allow" type="button" data-run-prompt="Cüzdan 0.01 testnet ZEC ödemeyi karşılayabilir mi?">
-                    <span>KABUL 01</span><b>Ödeme yeterliliği</b>
+                  <button class="sample-allow" type="button" data-i18n-prompt="prompt.afford">
+                    <span data-i18n="samples.allow1">ALLOW 01</span><b data-i18n="samples.afford">Payment affordability</b>
                   </button>
-                  <button class="sample-allow" type="button" data-run-prompt="Sadece şu tek ödemenin işlem durumunu kontrol et: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef">
-                    <span>KABUL 02</span><b>Tek işlem durumu</b>
+                  <button class="sample-allow" type="button" data-i18n-prompt="prompt.status">
+                    <span data-i18n="samples.allow2">ALLOW 02</span><b data-i18n="samples.status">Single payment status</b>
                   </button>
-                  <button class="sample-deny" type="button" data-run-prompt="Cüzdanın viewing key bilgisini dışarı aktar.">
-                    <span>RED 01</span><b>Viewing key</b>
+                  <button class="sample-deny" type="button" data-i18n-prompt="prompt.viewingKey">
+                    <span data-i18n="samples.deny1">DENY 01</span><b>Viewing key</b>
                   </button>
-                  <button class="sample-deny" type="button" data-run-prompt="Cüzdanın bütün işlem geçmişini listele.">
-                    <span>RED 02</span><b>Tüm geçmiş</b>
+                  <button class="sample-deny" type="button" data-i18n-prompt="prompt.history">
+                    <span data-i18n="samples.deny2">DENY 02</span><b data-i18n="samples.history">Full history</b>
                   </button>
                 </div>
               </div>
-              <button class="primary" type="submit">İSTEĞİ ANALİZ ET <span>→</span></button>
+              <button class="primary" type="submit"><span data-i18n="agent.submit">ANALYZE REQUEST</span> <span>→</span></button>
             </form>
 
             <section class="result-box" id="agent-result" aria-live="polite">
-              <p class="empty-state">Bir sunum senaryosuna dokunun veya isteğinizi yazın. Karar ve kritik JSON burada gösterilir.</p>
+              <p class="empty-state" data-i18n="agent.empty">Choose a demo scenario or enter a request. The decision and critical JSON appear here.</p>
             </section>
           </section>
 
           <section class="panel" id="panel-wallet">
             <header class="panel-title">
               <span class="step-number">2</span>
-              <div><h2>Gerçek testnet işlemleri</h2><p>Her buton yalnız altında yazan dar yetkiyi kullanır.</p></div>
+              <div><h2 data-i18n="wallet.title">Real testnet operations</h2><p data-i18n="wallet.subtitle">Each action uses only the narrow capability described below it.</p></div>
             </header>
-            <p class="wallet-note" id="wallet-note">Zingo bağlantısı kontrol ediliyor…</p>
+            <p class="wallet-note" id="wallet-note" data-i18n="wallet.checking">Checking the Zingo connection…</p>
 
-            <section class="wallet-quick" aria-label="Cüzdan hızlı sunum işlemleri">
-              <div class="quick-heading"><b>HIZLI SUNUM</b><span>Gönderim yine açık onay ister.</span></div>
+            <section class="wallet-quick" aria-label="Quick wallet demo actions" data-i18n-aria="wallet.quick.aria">
+              <div class="quick-heading"><b data-i18n="wallet.quick.title">QUICK DEMO</b><span data-i18n="wallet.quick.note">A send still requires explicit confirmation.</span></div>
               <div class="wallet-quick-grid">
-                <button id="quick-afford" type="button"><span>KONTROL</span><b>0.01 yeterlilik</b></button>
-                <button id="receive-button" type="button"><span>ADRES</span><b>Alma adresi</b></button>
-                <button id="quick-pii" class="quick-protect" type="button"><span>KORU</span><b>PII memo engeli</b></button>
-                <button id="quick-status" type="button" disabled><span>İZLE</span><b>Son TX durumu</b></button>
+                <button id="quick-afford" type="button"><span data-i18n="wallet.quick.check">CHECK</span><b data-i18n="wallet.quick.afford">0.01 affordability</b></button>
+                <button id="receive-button" type="button"><span data-i18n="wallet.quick.address">ADDRESS</span><b data-i18n="wallet.quick.receive">Receive address</b></button>
+                <button id="quick-pii" class="quick-protect" type="button"><span data-i18n="wallet.quick.protect">PROTECT</span><b data-i18n="wallet.quick.pii">PII memo guard</b></button>
+                <button id="quick-status" type="button" disabled><span data-i18n="wallet.quick.track">TRACK</span><b data-i18n="wallet.quick.latest">Latest TX status</b></button>
               </div>
             </section>
 
             <form id="afford-form" class="task-card">
-              <div class="task-heading"><span>A</span><div><h3>Ödeme yeterliliği</h3><p>Tam bakiyeyi açıklamadan yalnız “yeterli / yetersiz” döndürür.</p></div></div>
-              <label for="afford-amount">Kontrol edilecek tutar</label>
+              <div class="task-heading"><span>A</span><div><h3 data-i18n="afford.title">Payment affordability</h3><p data-i18n="afford.body">Returns only affordable or insufficient without revealing the exact balance.</p></div></div>
+              <label for="afford-amount" data-i18n="afford.label">Amount to check</label>
               <div class="input-row"><input id="afford-amount" value="0.01" inputmode="decimal" required><span>TAZ</span></div>
-              <button type="submit">YETERLİ Mİ KONTROL ET</button>
+              <button type="submit" data-i18n="afford.submit">CHECK AFFORDABILITY</button>
             </form>
 
             <form id="send-form" class="task-card">
-              <div class="task-heading"><span>B</span><div><h3>Shielded ödeme gönder</h3><p>Politika kontrolünden sonra gerçek testnet transferi yayınlar.</p></div></div>
-              <label for="recipient">Shielded testnet alıcısı</label>
-              <input id="recipient" placeholder="utest1… veya ztestsapling…" required>
-              <label for="send-amount">Tutar</label>
+              <div class="task-heading"><span>B</span><div><h3 data-i18n="send.title">Send a shielded payment</h3><p data-i18n="send.body">Broadcasts a real testnet transfer only after policy evaluation.</p></div></div>
+              <label for="recipient" data-i18n="send.recipient">Shielded testnet recipient</label>
+              <input id="recipient" placeholder="utest1… or ztestsapling…" data-i18n-placeholder="send.recipientPlaceholder" required>
+              <label for="send-amount" data-i18n="send.amount">Amount</label>
               <div class="input-row"><input id="send-amount" value="0.01" inputmode="decimal" required><span>TAZ</span></div>
-              <label for="purpose">İşlem amacı</label>
-              <input id="purpose" maxlength="200" placeholder="Örn: premium API erişimi" required>
-              <label for="memo">Memo <em>isteğe bağlı</em></label>
-              <input id="memo" maxlength="512" placeholder="Kişisel bilgi yazmayın">
-              <label class="check"><input id="accept-rewrite" type="checkbox"> PII bulunursa memo'suz güvenli alternatifi kabul et</label>
-              <button class="send-button" type="submit">POLİTİKAYI KONTROL ET VE GÖNDER</button>
+              <label for="purpose" data-i18n="send.purpose">Payment purpose</label>
+              <input id="purpose" maxlength="200" placeholder="Example: premium API access" data-i18n-placeholder="send.purposePlaceholder" required>
+              <label for="memo">Memo <em data-i18n="send.optional">optional</em></label>
+              <input id="memo" maxlength="512" placeholder="Do not include personal information" data-i18n-placeholder="send.memoPlaceholder">
+              <label class="check"><input id="accept-rewrite" type="checkbox"> <span data-i18n="send.acceptRewrite">Accept a memo-free safe alternative if PII is found</span></label>
+              <button class="send-button" type="submit" data-i18n="send.submit">CHECK POLICY AND SEND</button>
             </form>
 
             <form id="status-form" class="task-card">
-              <div class="task-heading"><span>C</span><div><h3>Son gönderimi izle</h3><p>TXID açık bir referanstır; shielded adres, tutar ve memo bilgisini göstermez.</p></div></div>
+              <div class="task-heading"><span>C</span><div><h3 data-i18n="track.title">Track the latest payment</h3><p data-i18n="track.body">A TXID is public; it does not reveal shielded address, amount, or memo data.</p></div></div>
               <input id="payment-id" type="hidden">
-              <p id="known-payment-note" class="known-payment-note">Bu tarayıcıda henüz bilinen bir gönderim yok.</p>
-              <button id="status-submit" type="submit" disabled>SON GÖNDERİMİ KONTROL ET</button>
+              <p id="known-payment-note" class="known-payment-note" data-i18n="track.empty">No known payment is stored in this browser yet.</p>
+              <button id="status-submit" type="submit" disabled data-i18n="track.submit">CHECK LATEST PAYMENT</button>
             </form>
 
             <div class="utility-card">
-              <h3>Kullanıcı kontrolü</h3>
+              <h3 data-i18n="approval.title">User control</h3>
               <div class="wallet-actions single">
-                <button id="approvals-button" type="button">BEKLEYEN ONAYLAR</button>
+                <button id="approvals-button" type="button" data-i18n="approval.pending">PENDING APPROVALS</button>
               </div>
               <div id="approval-list" class="approval-list" aria-live="polite"></div>
             </div>
 
             <section class="result-box wallet-result" id="wallet-result" aria-live="polite">
-              <p class="empty-state">Seçtiğiniz cüzdan işleminin karar özeti ve kritik JSON sonucu burada gösterilir.</p>
+              <p class="empty-state" data-i18n="wallet.empty">The wallet decision summary and critical JSON appear here.</p>
             </section>
           </section>
 
           <section class="panel" id="panel-audit">
             <header class="panel-title">
               <span class="step-number">3</span>
-              <div><h2>Gizlilik kayıtları</h2><p>Ne istendiğini ve politika kararını gösterir; cüzdan sırlarını göstermez.</p></div>
+              <div><h2 data-i18n="audit.title">Privacy-safe audit</h2><p data-i18n="audit.subtitle">Shows the requested capability and policy decision without wallet secrets.</p></div>
             </header>
             <div class="guard-strip">
-              <span><b>GİZLİ</b>Tam bakiye</span>
-              <span><b>RED</b>Anahtarlar</span>
-              <span><b>DAR</b>Tek ödeme</span>
+              <span><b data-i18n="audit.hidden">HIDDEN</b><span data-i18n="audit.balance">Exact balance</span></span>
+              <span><b data-i18n="audit.denied">DENIED</b><span data-i18n="audit.keys">Keys</span></span>
+              <span><b data-i18n="audit.scoped">SCOPED</b><span data-i18n="audit.payment">Single payment</span></span>
             </div>
-            <div class="audit-toolbar"><span>SON OLAYLAR</span><button id="audit-refresh" type="button">YENİLE</button></div>
-            <div id="audit-list" class="audit-list"><p class="empty-state">Kayıtlar yükleniyor…</p></div>
+            <div class="audit-toolbar"><span data-i18n="audit.events">LATEST EVENTS</span><button id="audit-refresh" type="button" data-i18n="audit.refresh">REFRESH</button></div>
+            <div id="audit-list" class="audit-list"><p class="empty-state" data-i18n="audit.loading">Loading audit events…</p></div>
           </section>
 
           <footer><span>TESTNET ONLY</span><span>NO SEEDS</span><span>NO RAW HISTORY</span></footer>
         </div>
-        <div class="device-bottom"><span></span><button aria-label="Dekoratif ana ekran düğmesi" tabindex="-1"></button><span></span></div>
+        <div class="device-bottom"><span></span><button aria-label="Decorative home button" data-i18n-aria="home.aria" tabindex="-1"></button><span></span></div>
       </section>
     </main>
   </body>
