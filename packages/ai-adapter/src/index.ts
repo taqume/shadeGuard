@@ -1,5 +1,4 @@
 import { Capability } from "@shadeguard/core";
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
 export interface IntentInput {
@@ -31,22 +30,6 @@ export interface LLMProvider {
   proposeIntent(input: IntentInput): Promise<IntentProposal>;
 }
 
-interface GeminiClient {
-  readonly models: {
-    generateContent(request: {
-      readonly model: string;
-      readonly contents: string;
-      readonly config: Record<string, unknown>;
-    }): Promise<{ readonly text: string | undefined }>;
-  };
-}
-
-export interface GeminiProviderOptions {
-  readonly apiKey: string;
-  readonly model?: string;
-  readonly client?: GeminiClient;
-}
-
 const intentProposalSchema = z.object({
   capability: z.string().min(1).max(80),
   purpose: z.string().min(1).max(200),
@@ -69,20 +52,6 @@ const capabilitySecurityOrder: readonly Capability[] = [
   Capability.UNKNOWN,
 ];
 
-const responseJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    capability: { type: "string", enum: Object.values(Capability) },
-    purpose: { type: "string" },
-    amountZec: { type: "string" },
-    recipient: { type: "string" },
-    paymentId: { type: "string" },
-    explanation: { type: "string" },
-  },
-  required: ["capability", "purpose", "explanation"],
-} as const;
-
 const INTENT_SYSTEM_INSTRUCTION = `You are ShadeGuard's intent parser, not its security authority.
 Convert the user's Zcash-related instruction into exactly one canonical capability.
 Allowed capabilities: ${Object.values(Capability).join(", ")}.
@@ -92,47 +61,6 @@ Copy an amount, recipient, or payment ID only when explicitly present. Never inv
 Use UNKNOWN when no capability is clearly supported by the instruction.
 Write a concise purpose and explain what you interpreted in the user's language.
 Return only a JSON object with capability, purpose, explanation and any explicitly present amountZec, recipient or paymentId.`;
-
-export class GeminiLLMProvider implements LLMProvider {
-  private readonly model: string;
-  private readonly client: GeminiClient;
-
-  public constructor(options: GeminiProviderOptions) {
-    if (!options.apiKey.trim()) throw new Error("Gemini API key is required");
-    this.model = options.model?.trim() || "gemini-2.5-flash";
-    this.client = options.client ?? new GoogleGenAI({ apiKey: options.apiKey });
-  }
-
-  public async proposeIntent(input: IntentInput): Promise<IntentProposal> {
-    const instruction = input.instruction.trim();
-    if (!instruction || instruction.length > 4_000) throw new Error("Agent instruction is empty or too long");
-    const response = await this.client.models.generateContent({
-      model: this.model,
-      contents: instruction,
-      config: {
-        systemInstruction: INTENT_SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseJsonSchema,
-      },
-    });
-    if (!response.text) throw new Error("Gemini returned no structured intent");
-    let decoded: unknown;
-    try {
-      decoded = JSON.parse(response.text) as unknown;
-    } catch {
-      throw new Error("Gemini returned invalid JSON intent");
-    }
-    const parsed = intentProposalSchema.parse(decoded);
-    return {
-      capability: parsed.capability,
-      purpose: parsed.purpose,
-      explanation: parsed.explanation,
-      ...(parsed.amountZec === undefined ? {} : { amountZec: parsed.amountZec }),
-      ...(parsed.recipient === undefined ? {} : { recipient: parsed.recipient }),
-      ...(parsed.paymentId === undefined ? {} : { paymentId: parsed.paymentId }),
-    };
-  }
-}
 
 interface NvidiaNimHttpResponse {
   readonly ok: boolean;
@@ -300,21 +228,12 @@ function normalizeProviderIntentPayload(value: unknown): unknown {
 
 export interface ConfiguredIntentAnalyzer {
   readonly analyzer: IntentAnalyzer;
-  readonly provider: "gemini" | "nvidia" | "deterministic";
+  readonly provider: "nvidia" | "deterministic";
   readonly model?: string;
 }
 
 export function createIntentAnalyzerFromEnv(env: NodeJS.ProcessEnv = process.env): ConfiguredIntentAnalyzer {
   const requested = env.AI_PROVIDER?.trim().toLowerCase() ?? "none";
-  const geminiApiKey = env.GEMINI_API_KEY?.trim();
-  if (requested === "gemini" && geminiApiKey) {
-    const model = env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
-    return {
-      analyzer: new IntentAnalyzer(new GeminiLLMProvider({ apiKey: geminiApiKey, model })),
-      provider: "gemini",
-      model,
-    };
-  }
   const nvidiaApiKey = env.NVIDIA_API_KEY?.trim();
   if (requested === "nvidia" && nvidiaApiKey) {
     const model = env.NVIDIA_MODEL?.trim() || "meta/llama-3.1-8b-instruct";

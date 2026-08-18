@@ -9,7 +9,6 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run --passWithNoTests",
-    "test:coverage": "vitest run --passWithNoTests --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

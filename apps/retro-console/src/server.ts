@@ -172,10 +172,9 @@ async function api(request: IncomingMessage, response: ServerResponse, state: Ap
       intent = await state.ai.analyzer.analyze({ instruction: input.instruction, requesterId: state.requester.agentId });
     } catch (error) {
       const quotaUnavailable = error instanceof Error && (error.message.includes("RESOURCE_EXHAUSTED") || error.message.includes("429"));
-      const providerName = state.ai.provider === "nvidia" ? "NVIDIA NIM" : "Gemini";
       providerNotice = quotaUnavailable
-        ? `${providerName} kotası kullanılamadığı için yerel deterministik intent parser kullanıldı.`
-        : `${providerName} çağrısı tamamlanamadığı için yerel deterministik intent parser kullanıldı.`;
+        ? "NVIDIA NIM kotası kullanılamadığı için yerel deterministik intent parser kullanıldı."
+        : "NVIDIA NIM çağrısı tamamlanamadığı için yerel deterministik intent parser kullanıldı.";
       intent = await new IntentAnalyzer().analyze({ instruction: input.instruction, requesterId: state.requester.agentId });
     }
     const canonical = canonicalizeRequest({

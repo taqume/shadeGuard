@@ -47,6 +47,20 @@ function decisionBanner(result, fallbackTitle = "SONUÇ") {
   return banner;
 }
 
+function walletBanner(result, fallbackTitle) {
+  if (typeof result.affordable !== "boolean") return decisionBanner(result, fallbackTitle);
+  const affordable = result.affordable;
+  const banner = element("div", `decision-banner ${affordable ? "allow" : "deny"}`);
+  banner.append(
+    element("small", "", "ÖDEME YETERLİLİK SONUCU"),
+    element("strong", "", affordable ? "YETERLİ BAKİYE" : "YETERSİZ BAKİYE"),
+    element("span", "", affordable
+      ? "Cüzdan istenen tutarı karşılayabiliyor; tam bakiye açıklanmadı."
+      : "Cüzdan istenen tutarı karşılayamıyor; tam bakiye açıklanmadı."),
+  );
+  return banner;
+}
+
 function criticalJson(value) {
   const details = element("details", "raw-json");
   details.open = true;
@@ -81,11 +95,17 @@ function updateQuickStatus() {
 }
 
 function walletJson(result) {
+  const affordability = typeof result.affordable === "boolean";
   return {
-    decision: result.decision,
+    ...(affordability
+      ? {
+        policyDecision: result.decision,
+        fundsResult: result.affordable ? "AFFORDABLE" : "INSUFFICIENT_FUNDS",
+      }
+      : { decision: result.decision }),
     risk: result.risk,
     reasonCode: result.reasonCode,
-    ...(typeof result.affordable === "boolean" ? { affordable: result.affordable } : {}),
+    ...(affordability ? { affordable: result.affordable } : {}),
     ...(result.receiveAddress ? { receiveAddress: result.receiveAddress } : {}),
     ...(result.payment ? { transaction: { status: result.payment.status, txid: result.payment.paymentId } } : {}),
     ...(result.paymentStatus ? {
@@ -120,13 +140,13 @@ function renderAgent(result) {
 
 function renderWallet(result, actionLabel) {
   const target = $("#wallet-result");
-  target.replaceChildren(decisionBanner(result, actionLabel));
+  target.replaceChildren(walletBanner(result, actionLabel));
   const grid = element("div", "result-grid");
   grid.append(resultRow("İŞLEM", actionLabel));
   if (result.risk) grid.append(resultRow("RİSK", result.risk));
   if (result.reasonCode) grid.append(resultRow("NEDEN", result.reasonCode));
   if (typeof result.affordable === "boolean") {
-    grid.append(resultRow("YETERLİ Mİ", result.affordable ? "EVET" : "HAYIR", result.affordable ? "protected" : ""));
+    grid.append(resultRow("YETERLİ Mİ", result.affordable ? "EVET" : "HAYIR", result.affordable ? "protected" : "rejected"));
   }
   if (result.receiveAddress) grid.append(resultRow("ALMA ADRESİ", result.receiveAddress));
   if (result.payment?.paymentId) {
@@ -274,8 +294,7 @@ $("#agent-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = event.currentTarget.querySelector("button[type=submit]");
   button.disabled = true;
-  const providerLabel = state.aiProvider === "nvidia" ? "NVIDIA NIM" : "Gemini";
-  $("#agent-result").replaceChildren(element("p", "empty-state", state.aiConfigured ? `${providerLabel} isteği yorumluyor…` : "Deterministik yerel analiz çalışıyor…"));
+  $("#agent-result").replaceChildren(element("p", "empty-state", state.aiConfigured ? "NVIDIA NIM isteği yorumluyor…" : "Deterministik yerel analiz çalışıyor…"));
   try {
     renderAgent(await request("/api/agent/analyze", { method: "POST", body: JSON.stringify({ instruction: $("#instruction").value }) }));
     await loadAudit();
@@ -384,12 +403,3 @@ try {
 void Promise.all([loadStatus(), loadAudit(), loadApprovals(false)]).catch(() => {
   $("#wallet-note").textContent = "ShadeGuard backend bağlantısı kurulamadı.";
 });
-
-const preview = new URLSearchParams(window.location.search).get("preview");
-if (preview === "balance") {
-  $("#instruction").value = "0.01 ZEC ödeme için cüzdanın tam bakiyesini getir.";
-  $("#agent-form").requestSubmit();
-} else if (preview === "pii") {
-  $("#instruction").value = "0.01 testnet ZEC'i ztestsapling1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq adresine gönder; memo alanına alice@example.com yaz.";
-  $("#agent-form").requestSubmit();
-}

@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   createIntentAnalyzerFromEnv,
-  GeminiLLMProvider,
   IntentAnalyzer,
   NvidiaNimLLMProvider,
+  type IntentInput,
   type LLMProvider,
 } from "./index.js";
 
@@ -38,68 +38,29 @@ describe("IntentAnalyzer", () => {
     expect(intent).not.toHaveProperty("decision");
   });
 
-  it("uses Gemini only for structured intent and sends no requester or wallet context", async () => {
-    const requests: unknown[] = [];
-    const gemini = new GeminiLLMProvider({
-      apiKey: "test-only",
-      model: "gemini-test",
-      client: {
-        models: {
-          async generateContent(request) {
-            requests.push(request);
-            return {
-              text: JSON.stringify({
-                capability: Capability.READ_EXACT_BALANCE,
-                purpose: "Ödeme gücünü kontrol et",
-                amountZec: "0.01",
-                explanation: "Tam bakiye yerine ödeme yeterliliği isteniyor.",
-              }),
-            };
-          },
-        },
+  it("removes an explicit memo from hosted-model context while preserving it for local policy", async () => {
+    const requests: IntentInput[] = [];
+    const llm: LLMProvider = {
+      async proposeIntent(input) {
+        requests.push(input);
+        return {
+          capability: Capability.SEND_SHIELDED,
+          purpose: "Testnet ödeme",
+          amountZec: "0.01",
+          explanation: "Shielded ödeme isteği.",
+        };
       },
-    });
+    };
 
-    const intent = await new IntentAnalyzer(gemini).analyze({
-      instruction: "0.01 ZEC için tam bakiyemi getir",
-      requesterId: "private-agent-id",
-    });
-
-    expect(intent).toMatchObject({ capability: Capability.READ_EXACT_BALANCE, source: "llm" });
-    expect(JSON.stringify(requests)).not.toContain("private-agent-id");
-    expect(intent).not.toHaveProperty("decision");
-  });
-
-  it("removes an explicit memo from Gemini context while preserving it for local policy", async () => {
-    const requests: unknown[] = [];
-    const gemini = new GeminiLLMProvider({
-      apiKey: "test-only",
-      client: {
-        models: {
-          async generateContent(request) {
-            requests.push(request);
-            return {
-              text: JSON.stringify({
-                capability: Capability.SEND_SHIELDED,
-                purpose: "Testnet ödeme",
-                amountZec: "0.01",
-                explanation: "Shielded ödeme isteği.",
-              }),
-            };
-          },
-        },
-      },
-    });
-
-    const intent = await new IntentAnalyzer(gemini).analyze({
+    const intent = await new IntentAnalyzer(llm).analyze({
       instruction: "0.01 ZEC gönder; memo alanına alice@example.com yaz.",
       requesterId: "agent",
     });
 
     expect(intent.memo).toBe("alice@example.com");
     expect(intent.purpose).not.toContain("alice@example.com");
-    expect(JSON.stringify(requests)).not.toContain("alice@example.com");
-    expect(JSON.stringify(requests)).toContain("MEMO REDACTED LOCALLY");
+    expect(requests[0]?.instruction).not.toContain("alice@example.com");
+    expect(requests[0]?.instruction).toContain("MEMO REDACTED LOCALLY");
   });
 
   it("uses NVIDIA NIM as an untrusted structured parser without sending requester identity", async () => {

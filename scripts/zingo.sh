@@ -14,9 +14,9 @@ die() {
 
 check() {
   command -v "$SG_ZINGO_BIN" >/dev/null 2>&1 || {
-    printf 'Zingo CLI bulunamadı: %s\n' "$SG_ZINGO_BIN"
-    printf 'ShadeGuard sahte wallet verisine geçmeyecek; web konsolu policy/agent modunda çalışır.\n'
-    printf 'Resmî v5 kaynak kurulumu: https://github.com/zingolabs/zingolib/tree/zingolib_v5.0.0/zingo-cli\n'
+    printf 'Zingo CLI was not found: %s\n' "$SG_ZINGO_BIN"
+    printf 'ShadeGuard will not substitute fake wallet data; wallet operations fail closed.\n'
+    printf 'Pinned source setup: see the Quick start section in README.md\n'
     exit 2
   }
   local version

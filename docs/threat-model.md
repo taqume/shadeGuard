@@ -50,7 +50,7 @@ Mitigations: explicit memo text is removed locally before a hosted AI request; d
 
 An agent selects a transparent receiver, a non-`FullPrivacy` policy, cross-pool behavior, or a provider method whose privacy semantics are unknown.
 
-Mitigations: address classification; testnet-only enforcement; transparent/unknown recipient denial; the Zingo adapter accepts only shielded recipients and the Zallet adapter hard-codes `FullPrivacy`; missing or changed command/RPC semantics make the capability unavailable.
+Mitigations: address classification; testnet-only enforcement; transparent/unknown recipient denial; the Zingo adapter accepts only shielded recipients; missing or changed command semantics make the capability unavailable.
 
 ### T5 — Overspending and confused deputy behavior
 
@@ -84,27 +84,27 @@ Mitigations: LLM output is parsed as untrusted intent, normalized to a closed en
 
 ### T10 — Network privacy leakage to infrastructure
 
-Even shielded transactions can expose IP/timing information to Zebra/Zaino peers or a Zingo indexer.
+Even shielded transactions can expose IP/timing information to a Zingo indexer.
 
-Mitigations for MVP: document the selected Zingo indexer and residual metadata risk; keep wallet keys client-side; optionally use the self-hosted Z3 path when network metadata matters; bind all local services to loopback. Tor/Nym transport and broadcast timing defenses are future hardening, not current guarantees.
+Mitigations for MVP: document the selected Zingo indexer and residual metadata risk; keep wallet keys client-side; bind all local services to loopback. Tor/Nym transport and broadcast timing defenses are future hardening, not current guarantees.
 
 ### T11 — SSRF and credential exfiltration through provider configuration
 
 An attacker changes an RPC URL or returns malicious content to access local services or leak credentials.
 
-Mitigations: Zingo indexers require HTTPS except for loopback HTTP; configured URLs reject embedded credentials; Zallet redirects are disabled; subprocess/RPC response sizes and timeouts are bounded.
+Mitigations: Zingo indexers require HTTPS except for loopback HTTP; configured URLs reject embedded credentials; subprocess response sizes and timeouts are bounded.
 
 ### T12 — Mainnet use by mistake
 
 Test code is pointed at mainnet or receives a mainnet address.
 
-Mitigations: `testnet` is an invariant in the MVP, not merely a default; startup and recipient classification reject mainnet; Compose uses testnet-specific ports/config; docs prohibit mainnet keys and funds.
+Mitigations: `testnet` is an invariant in the MVP, not merely a default; startup and recipient classification reject mainnet; docs prohibit mainnet keys and funds.
 
 ### T13 — Browser/API credential or action exposure
 
 A hosted AI API key is bundled into frontend assets, a remote site calls the local approval/send endpoints, or the console is accidentally exposed to the LAN.
 
-Mitigations: Gemini/NVIDIA NIM calls run server-side and keys are read only from an ignored environment file; the server binds only to loopback; mutation requests reject foreign origins; CSP and frame denial prevent common browser embedding; request bodies and agent calls are bounded. The local host remains trusted for the MVP.
+Mitigations: NVIDIA NIM calls run server-side and keys are read only from an ignored environment file; the server binds only to loopback; mutation requests reject foreign origins; CSP and frame denial prevent common browser embedding; request bodies and agent calls are bounded. The local host remains trusted for the MVP.
 
 ## Abuse cases that must remain in tests
 

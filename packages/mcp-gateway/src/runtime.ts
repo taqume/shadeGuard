@@ -6,7 +6,6 @@ import {
   DownstreamMcpZcashProvider,
   MockZcashProvider,
   UnavailableZcashProvider,
-  ZalletJsonRpcProvider,
   ZingoCliProvider,
   type ZcashProvider,
 } from "@shadeguard/zcash-adapter";
@@ -37,17 +36,6 @@ export function createProvider(): ZcashProvider {
       waitForSync: process.env.ZINGO_WAIT_FOR_SYNC !== "false",
       commandTimeoutMs: timeout,
       feeReserveZatoshi: feeReserve,
-    });
-  }
-  if (mode === "zallet") {
-    const rpcCookiePath = process.env.ZALLET_RPC_COOKIE_PATH?.trim();
-    return new ZalletJsonRpcProvider({
-      rpcUrl: requiredEnv("ZALLET_RPC_URL"),
-      accountId: requiredEnv("ZALLET_ACCOUNT_ID"),
-      fundSource: process.env.ZALLET_FUND_SOURCE === "sapling" ? "sapling" : "orchard",
-      ...(rpcCookiePath
-        ? { rpcCookiePath: resolve(rpcCookiePath) }
-        : { rpcUser: requiredEnv("ZALLET_RPC_USER"), rpcPassword: requiredEnv("ZALLET_RPC_PASSWORD") }),
     });
   }
   if (mode === "mcp") {

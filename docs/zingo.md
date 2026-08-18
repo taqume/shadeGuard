@@ -1,6 +1,6 @@
 # Zingo CLI adapter
 
-ShadeGuard'ın tercih edilen gerçek testnet yolu:
+ShadeGuard's preferred real testnet path is:
 
 ```text
 Retro Console / MCP Agent
@@ -12,27 +12,27 @@ Deterministic Policy Engine
 ZingoCliProvider -- argument-vector subprocess --> zingo-cli (Ironwood beta)
                                                    |
                                                    v
-                                      testnet Zcash indexer
+                                         Zcash testnet indexer
 ```
 
-## Neden Zingo?
+## Why Zingo?
 
-Zingo CLI bir light wallet olduğu için yerel tam node senkronizasyonunu zorunlu kılmaz. Wallet keyleri yerel Zingo data directory içinde kalır. Bunun karşılığında indexer, istemcinin IP adresi ve shielded işlemlerle ilişkili olabilecek blok erişim metadata'sını öğrenebilir. Bu, Zcash zincir üstü gizliliğinden ayrı bir ağ metadata sınırıdır.
+Zingo CLI is a light wallet, so it does not require a local full-node sync. Wallet keys remain inside the local Zingo data directory. The tradeoff is that the selected indexer can observe the client's IP address, timing, and block-access metadata that may correlate with shielded activity. This network-metadata boundary is separate from Zcash's on-chain privacy.
 
-Adapter upstream komut sözleşmesini kullanır:
+The adapter uses only this reviewed command contract:
 
-- `spendable_balance`: exact değer adapter içinde boolean'a indirgenir;
-- `addresses`: yalnız testnet shielded receive address seçilir;
-- `quicksend`: yalnız deterministik policy ve gerekiyorsa kullanıcı onayından sonra çağrılır;
-- `transactions`: yalnız tek bir bilinen txid'nin durumunu adapter içinde bulmak için kullanılır; ham liste agent'a dönmez.
+- `spendable_balance`: reduced to a boolean inside the adapter;
+- `addresses`: returns one testnet shielded receive address;
+- `quicksend`: called only after deterministic policy and any required approval;
+- `transactions`: searched internally for one known TXID; the raw list never reaches the agent.
 
-ShadeGuard hiçbir zaman `recovery_info`, `export_ufvk`, `messages`, `notes`, `value_transfers` veya raw command passthrough sunmaz.
+ShadeGuard does not expose `recovery_info`, `export_ufvk`, `messages`, `notes`, `value_transfers`, or raw command passthrough.
 
-## Güvenli çalıştırma
+## Execution controls
 
-CLI `shell: false` ve ayrı argument vector ile başlatılır. Recipient testnet shielded olarak tekrar doğrulanır. Çıktı boyutu ve çalışma süresi sınırlıdır; stderr ve ham hata cevabı audit/agent yanıtına eklenmez. Wallet dosyasına eşzamanlı erişimi önlemek için komutlar serialize edilir.
+The CLI is launched with `shell: false` and an argument vector. The recipient is validated again as testnet and shielded. Output size and execution time are bounded, raw stderr is not copied into agent/audit responses, and wallet commands are serialized to avoid concurrent file access.
 
-Varsayılanlar:
+Defaults:
 
 ```dotenv
 SHADEGUARD_MODE=zingo
@@ -42,19 +42,21 @@ ZINGO_SERVER_URL=https://testnet.zec.rocks:443
 ZINGO_WAIT_FOR_SYNC=true
 ```
 
-`ZINGO_SERVER_URL` HTTPS olmalıdır; yalnız loopback adreslerinde HTTP kabul edilir. Mainnet runtime tarafından reddedilir.
+`ZINGO_SERVER_URL` must use HTTPS; HTTP is accepted only for a loopback address. Mainnet is rejected by the runtime.
 
-## Kısa doğrulama
+## Build and verify
+
+The live acceptance used official Zingo commit `f48b15c9ed5676fcce92ad51b1e2a7eecbc8e36d` from the `zingolib_beta_ironwood` line. See the root [README](../README.md#2-build-the-testnet-wallet-client) for the exact source-build steps.
 
 ```bash
 pnpm zingo:check
 pnpm web
 ```
 
-Gerçek receive-address veya ödeme çağrısı wallet'ın güncel hale gelmesini bekleyebilir. Bu, tam Zebra zincir senkronizasyonu değildir; yine de CI testlerine dahil edilmez ve gerçek testnet kabul testi yalnız açıkça istendiğinde çalıştırılır.
+A receive-address or payment operation can wait for the light wallet to sync. This is not a full Zebra chain sync, but it still depends on an external indexer and is intentionally excluded from the normal automated test suite.
 
-## Kalıcı wallet ve faucet
+## Persistent wallet and test funds
 
-`.shadeguard/zingo-testnet` tek kalıcı testnet wallet'tır. Uygulama açılışında yeniden oluşturulmaz ve otomatik faucet talebi yapılmaz. Faucet rate-limitleri ve kötüye kullanım riski nedeniyle testler bu ana cüzdanı kullanır; görev bazlı ayrım gerekirse aynı wallet altında farklı alım adresleri tercih edilir.
+`.shadeguard/zingo-testnet` is one persistent development wallet. It is not recreated at startup and ShadeGuard does not automatically request faucet funds. Use the receive-address operation, then fund it from a currently available Zcash testnet faucet. Faucet availability and rate limits are external to ShadeGuard and do not block policy-only tests.
 
-Ironwood uyumlu [Fauzec](https://fauzec.com/) unified/Sapling adreslere 1 TAZ verir ve API sunar. Alternatif [ZecFaucet](https://zecfaucet.com/) insan doğrulaması ve proof-of-work isteyebilir. Faucet erişilebilirliği harici ve geçici bir bağımlılıktır; başarısız claim uygulama başlangıcını engellemez.
+Wallet material under `.shadeguard/` is ignored by Git. Never copy a seed phrase, private key, spending key, or viewing key into `.env`, the frontend, an issue, or an AI prompt.

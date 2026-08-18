@@ -38,7 +38,6 @@ Approval verifier (when required)
 ZcashProvider interface
         |
         +--> Zingo CLI Ironwood beta (preferred testnet light-client path)
-        +--> Zallet JSON-RPC (optional full-node path)
         +--> Downstream MCP client adapter (allowlisted provider-specific mapping)
         +--> Mock provider (tests only)
 ```
@@ -51,8 +50,8 @@ The gateway does not dynamically proxy `tools/list`. Its upstream registry is co
 | --- | --- | --- |
 | `shadeguard-core` | Canonical requests, risk model, deterministic policies, PII detection, redaction | RPC names, API keys, MCP transports |
 | `approval-service` | Request-bound, expiring, one-use approvals | Wallet secrets, raw provider responses |
-| `zcash-adapter` | Minimal provider interface, Zingo/Zallet/downstream implementations, test doubles | Agent prompts, policy decisions |
-| `ai-adapter` | Gemini/NVIDIA NIM structured intent proposal and deterministic no-key fallback | Policy decisions, wallet state, execution |
+| `zcash-adapter` | Minimal provider interface, Zingo/downstream implementations, test doubles | Agent prompts, policy decisions |
+| `ai-adapter` | NVIDIA NIM structured intent proposal and deterministic no-key fallback | Policy decisions, wallet state, execution |
 | `mcp-gateway` | Safe MCP server, normalization and execution pipeline | Private keys, unrestricted downstream tool lists |
 | `demo-agent` | Reproducible MCP client scenarios | Direct wallet connectivity |
 | `retro-console` | Localhost-only natural-language, wallet and audit visualization | API keys in browser, direct wallet commands |
@@ -96,15 +95,11 @@ The preferred real integration is the official `zingolib_beta_ironwood` Zingo CL
 
 Zingo's broad commands such as `recovery_info`, `export_ufvk`, `messages`, `notes`, or a raw command passthrough have no mapping. CLI output and execution time are bounded, wallet commands are serialized, and only HTTPS indexers or loopback HTTP are accepted. The wallet directory is local, ignored, and mode `0700`.
 
-The existing Zallet/Zaino/Zebra path remains an optional full-node adapter. Zallet is currently beta, so this is an adapter choice rather than a core dependency.
-
-At startup the adapter calls `rpc.discover` and builds an allowlisted capability map. It requires only methods needed for the configured operations and never invokes key-export, full-history, or unrestricted note-list methods. For sending, the preferred method is `z_sendfromaccount` with `FullPrivacy`. If the method or privacy parameter is unavailable, `SEND_SHIELDED` is unavailable. There is no permissive fallback.
-
-Versions used by both paths are pinned rather than tracking `latest`. Upgrades must repeat command/RPC contract tests and testnet integration tests.
+The Zingo source revision is pinned rather than tracking `latest`. Upgrades must repeat command-contract tests and a real testnet acceptance check.
 
 ## Agent and web execution boundary
 
-The natural-language endpoint is preview-only: Gemini or NVIDIA NIM proposes a capability and the gateway's deterministic engine inspects it without downstream execution. Real wallet actions use separate typed endpoints and explicit UI actions. A shielded send is never inferred and executed from free text. The retro console binds only to loopback, rejects cross-origin mutation requests, applies a restrictive CSP, limits request bodies and rate-limits agent analysis. Provider API keys exist only in the server environment.
+The natural-language endpoint is preview-only: NVIDIA NIM proposes a capability and the gateway's deterministic engine inspects it without downstream execution. Real wallet actions use separate typed endpoints and explicit UI actions. A shielded send is never inferred and executed from free text. The retro console binds only to loopback, rejects cross-origin mutation requests, applies a restrictive CSP, limits request bodies and rate-limits agent analysis. Provider API keys exist only in the server environment.
 
 ## Approval model
 
@@ -122,18 +117,14 @@ Operational logs go to stderr because stdout is reserved for MCP stdio transport
 2. Minimum-information balance behavior and leakage tests.
 3. PII memo rewrite with explicit acceptance.
 4. Viewing-key/history least-authority denials.
-5. Zingo CLI light-wallet adapter plus optional pinned Zallet/Zaino/Zebra profile.
-6. Gemini/NVIDIA NIM intent-explanation adapter and retro privacy console.
+5. Zingo CLI light-wallet adapter pinned to the current testnet protocol.
+6. NVIDIA NIM intent-explanation adapter and retro privacy console.
 7. Paid HTTP 402 demo backed by a real testnet payment. The loopback demo service issues a shielded payment requirement, verifies only the supplied incoming txid in its separate merchant wallet, and releases the protected response after confirmation.
 
 The blockchain acceptance slice was completed on 2026-08-17: a locally generated Zingo development wallet received testnet ZEC, ShadeGuard broadcast a shielded transfer through its MCP safe tool, and the task-scoped status returned `CONFIRMED` through MCP. The repeatable live command remains explicitly gated because it spends testnet funds and depends on an external indexer. Evidence and txids are recorded in [live-acceptance.md](live-acceptance.md).
 
 ## Upstream facts used by this design
 
-- Zallet documents separate `zebra` and `zaino` backends; Zaino is the supported choice for separate containers, non-Linux hosts, and regtest: <https://zcash.github.io/zallet/guide/installation/index.html>
-- Zallet exposes a generated OpenRPC document through `rpc.discover`: <https://zcash.github.io/zallet/rpc/index.html>
-- `z_sendfromaccount` accepts an explicit fund source and privacy policy and returns a transaction ID synchronously: <https://zcash.github.io/zallet/rpc/index.html#z_sendfromaccount>
 - MCP SDK v2 separates server and client packages: <https://github.com/modelcontextprotocol/typescript-sdk>
 - Zingo's official Ironwood beta tag supports the current testnet transaction format: <https://github.com/zingolabs/zingolib/tree/zingolib_beta_ironwood/zingo-cli>
-- Google recommends the production-ready `@google/genai` SDK for Gemini: <https://ai.google.dev/gemini-api/docs/libraries>
 - NVIDIA exposes `meta/llama-3.1-8b-instruct` through a free prototyping endpoint: <https://build.nvidia.com/meta/llama-3_1-8b-instruct/deploy>
